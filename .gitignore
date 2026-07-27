@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables (contain secrets)
+.env
+!.env.example
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Database files
+*.db
+*.sqlite
+server/data/*.db
+
+# Uploads (user content, not source code)
+server/src/uploads/*
+!server/src/uploads/.gitkeep
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Vite
+client/.vite/
+
+# Testing
+coverage/

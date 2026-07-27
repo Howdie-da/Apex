@@ -1,0 +1,87 @@
+/* ============================================
+   client/src/index.css — Brutalist Design System
+   ============================================ */
+
+@import "tailwindcss";
+
+@theme inline {
+  /* ── Color Tokens (OKLCH, pure grayscale dark) ── */
+  --color-background:         oklch(0.12 0 0);
+  --color-foreground:         oklch(0.97 0 0);
+  --color-card:               oklch(0.15 0 0);
+  --color-card-foreground:    oklch(0.97 0 0);
+  --color-secondary:          oklch(0.20 0 0);
+  --color-muted:              oklch(0.18 0 0);
+  --color-muted-foreground:   oklch(0.60 0 0);
+  --color-border:             oklch(0.30 0 0);
+  --color-primary:            oklch(0.97 0 0);
+  --color-primary-foreground: oklch(0.12 0 0);
+  --color-sidebar:            oklch(0.10 0 0);
+
+  /* ── Shape ── */
+  --radius: 0rem;
+
+  /* ── Typography ── */
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+}
+
+@layer base {
+  *, *::before, *::after {
+    border-radius: var(--radius) !important;
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: dark;
+    background-color: var(--color-background);
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+    height: 100dvh;
+    margin: 0;
+    padding: 0;
+  }
+
+  #root {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Scrollbar — minimal 1px track ── */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-muted-foreground);
+  }
+
+  /* ── Selection ── */
+  ::selection {
+    background-color: var(--color-foreground);
+    color: var(--color-background);
+  }
+}
+
+/* ── Mobile slide animation ── */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+.animate-slide-in {
+  animation: slideInLeft 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

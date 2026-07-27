@@ -1,0 +1,129 @@
+// ============================================
+// client/src/lib/api.ts
+// ============================================
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+interface FetchOptions extends RequestInit {
+  skipAuth?: boolean;
+}
+
+let isRefreshing = false;
+let refreshSubscribers: ((token: string) => void)[] = [];
+
+function subscribeTokenRefresh(cb: (token: string) => void) {
+  refreshSubscribers.push(cb);
+}
+
+function onRefreshed(token: string) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+/**
+ * Custom error class for API response errors.
+ */
+export class APIError extends Error {
+  status: number;
+  data: any;
+
+  constructor(message: string, status: number, data: any = null) {
+    super(message);
+    this.name = 'APIError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+/**
+ * Fetch wrapper that handles:
+ * 1. Base URL prefixing
+ * 2. Authorization headers attaching
+ * 3. Silent token refreshing (re-tries original requests on 401)
+ */
+export async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
+  const { skipAuth = false, ...init } = options;
+  const url = `${API_URL}${endpoint}`;
+  
+  // Set default content type to JSON
+  const headers = new Headers(init.headers || {});
+  if (!headers.has('Content-Type') && !(init.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  // Inject Access Token unless skipped
+  if (!skipAuth) {
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+  }
+
+  const response = await fetch(url, { ...init, headers });
+
+  if (response.ok) {
+    return (await response.json()) as T;
+  }
+
+  // Handle Token Expiration (401 Unauthorized)
+  if (response.status === 401 && !skipAuth) {
+    const refreshToken = localStorage.getItem('refreshToken');
+    if (!refreshToken) {
+      throw new APIError('Session expired. Please log in again.', 401);
+    }
+
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshResponse = await fetch(`${API_URL}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!refreshResponse.ok) {
+          // Refresh token expired or revoked -> clear storage
+          localStorage.removeItem('accessToken');
+          localStorage.removeItem('refreshToken');
+          window.dispatchEvent(new Event('auth:logout'));
+          throw new APIError('Session expired. Please log in again.', 401);
+        }
+
+        const data = await refreshResponse.json();
+        localStorage.setItem('accessToken', data.accessToken);
+        localStorage.setItem('refreshToken', data.refreshToken);
+        
+        isRefreshing = false;
+        onRefreshed(data.accessToken);
+      } catch (err) {
+        isRefreshing = false;
+        throw err;
+      }
+    }
+
+    // Wait for the token refresh to complete and retry the original request
+    return new Promise((resolve, reject) => {
+      subscribeTokenRefresh(async (newToken) => {
+        try {
+          headers.set('Authorization', `Bearer ${newToken}`);
+          const retryResponse = await fetch(url, { ...init, headers });
+          if (!retryResponse.ok) {
+            const errData = await retryResponse.json().catch(() => null);
+            reject(new APIError(errData?.error || 'Request failed after refresh', retryResponse.status, errData));
+          } else {
+            resolve((await retryResponse.json()) as T);
+          }
+        } catch (err) {
+          reject(err);
+        }
+      });
+    });
+  }
+
+  const errorData = await response.json().catch(() => null);
+  throw new APIError(
+    errorData?.error || `Request failed with status ${response.status}`,
+    response.status,
+    errorData
+  );
+}
