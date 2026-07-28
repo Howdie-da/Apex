@@ -20,10 +20,9 @@ function getAvatarInitials(name: string): string {
 export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => {
   if (!room) return null;
 
-  const initials = getAvatarInitials(room.name);
+  const initials = getAvatarInitials(room.dmUser ? room.dmUser.displayName : room.name);
   const isChannel = room.type === 'group';
-  const handle = isChannel ? `#${room.name}` : `@${room.name.toLowerCase().replace(/\s+/g, '')}`;
-  const tag = isChannel ? (room.name === 'General' ? 'AP' : 'CH') : 'DM';
+  const handle = isChannel ? `#${room.name}` : (room.dmUser ? `@${room.dmUser.username}` : 'DM');
 
   return (
     <div className="border-b border-border bg-card p-3 sm:p-4 shrink-0 select-none animate-slide-down w-full">
@@ -31,7 +30,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/60">
         <span className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 bg-foreground inline-block" />
-          Channel Details & Security
+          Details
         </span>
         <button
           onClick={onClose}
@@ -52,18 +51,17 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
           </div>
           <div className="min-w-0">
             <h3 className="font-bold text-sm text-foreground truncate">
-              {isChannel ? `#${room.name}` : room.name}
+              {isChannel ? `#${room.name}` : room.dmUser?.displayName || 'Direct Message'}
             </h3>
             <p className="font-mono text-xs text-muted-foreground truncate">
               {handle}
             </p>
             <div className="flex items-center gap-2 mt-1">
-              <span className="font-mono text-[9px] font-bold tracking-wider px-1.5 py-0.5 border border-border bg-background text-foreground">
-                {tag} · Apex
-              </span>
-              <span className="font-mono text-[9px] font-bold tracking-wider px-1.5 py-0.5 border border-border bg-foreground text-background">
-                Online
-              </span>
+              {!isChannel && (
+                <span className="font-mono text-[9px] font-bold tracking-wider px-1.5 py-0.5 border border-border bg-foreground text-background">
+                  {room.dmUser?.isOnline ? 'Online' : 'Offline'}
+                </span>
+              )}
             </div>
           </div>
         </div>

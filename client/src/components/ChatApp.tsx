@@ -14,10 +14,12 @@ import { useUIStore } from '../store/useUIStore';
 import PlatformRail from './PlatformRail';
 import ConversationList from './ConversationList';
 import MessageThread from './MessageThread';
+import UserInfoModal from './UserInfoModal';
 
 export const ChatApp: React.FC = () => {
   const { user, logout } = useAuthStore();
   const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
+  const [userInfoOpen, setUserInfoOpen] = useState<boolean>(false);
   
   const { 
     rooms, 
@@ -50,7 +52,7 @@ export const ChatApp: React.FC = () => {
     loadRooms();
   }, [loadRooms]);
 
-  const activeRoom = rooms.find((r) => r.id === activeRoomId) || rooms[0] || null;
+  const activeRoom = rooms.find((r) => r.id === activeRoomId) || null;
 
   // Unread count per category
   const getUnreadCount = (_cat: CategoryId): number => 0;
@@ -71,6 +73,7 @@ export const ChatApp: React.FC = () => {
             getUnreadCount={getUnreadCount}
             onLogout={logout}
             onToggleCollapse={toggleRailCollapsed}
+            onSettingsClick={() => setUserInfoOpen(true)}
           />
         </div>
 
@@ -104,6 +107,7 @@ export const ChatApp: React.FC = () => {
                 }}
                 searchQuery={searchQuery}
                 onSearch={setSearchQuery}
+                currentUser={user}
               />
             </Panel>
 
@@ -118,7 +122,7 @@ export const ChatApp: React.FC = () => {
                 currentUser={user}
                 typingUsers={typingUsers.map(u => u.username)}
                 loadingHistory={loadingHistory}
-                onSendMessage={(content) => sendMessage(activeRoom?.id || '', content)}
+                onSendMessage={(content, replyTo) => sendMessage(activeRoom?.id || '', content, 'text', replyTo)}
                 onTyping={() => emitTyping(activeRoom?.id || '')}
                 onStopTyping={() => emitStopTyping(activeRoom?.id || '')}
                 detailsOpen={detailsOpen}
@@ -140,7 +144,7 @@ export const ChatApp: React.FC = () => {
               currentUser={user}
               typingUsers={typingUsers.map(u => u.username)}
               loadingHistory={loadingHistory}
-              onSendMessage={(content) => sendMessage(activeRoom?.id || '', content)}
+              onSendMessage={(content, replyTo) => sendMessage(activeRoom?.id || '', content, 'text', replyTo)}
               onTyping={() => emitTyping(activeRoom?.id || '')}
               onStopTyping={() => emitStopTyping(activeRoom?.id || '')}
               detailsOpen={detailsOpen}
@@ -168,11 +172,19 @@ export const ChatApp: React.FC = () => {
                 }}
                 searchQuery={searchQuery}
                 onSearch={setSearchQuery}
+                currentUser={user}
               />
             </div>
           </div>
         )}
       </div>
+      {user && (
+        <UserInfoModal
+          user={user}
+          isOpen={userInfoOpen}
+          onClose={() => setUserInfoOpen(false)}
+        />
+      )}
     </div>
   );
 };

@@ -1,3 +1,7 @@
+// ============================================
+// server/src/models/user.ts
+// ============================================
+
 import pool from '../config/db';
 import { UserRow, User, toUser } from '../types/index';
 import { logger } from '../config/logger';
@@ -49,3 +53,52 @@ export async function getOnlineUsers(): Promise<User[]> {
   );
   return rows.map(toUser);
 }
+
+/**
+ * Phase 2 E2EE: Store a user's ECDH P-256 public key (Base64 encoded).
+ */
+export async function savePublicKey(userId: string, publicKey: string): Promise<void> {
+  await pool.query(
+    'UPDATE users SET public_key = $1 WHERE id = $2',
+    [publicKey, userId]
+  );
+  log.debug({ userId }, 'Public key saved');
+}
+
+/**
+ * Phase 2 E2EE: Fetch another user's public key for key exchange.
+ */
+export async function getPublicKey(userId: string): Promise<string | null> {
+  const { rows } = await pool.query<{ public_key: string | null }>(
+    'SELECT public_key FROM users WHERE id = $1',
+    [userId]
+  );
+  return rows[0]?.public_key || null;
+}
+
+/**
+ * DM: Fetch user by exact username (case-insensitive, excludes requesting user).
+ */
+export async function findByExactUsername(username: string, excludeUserId?: string): Promise<User | null> {
+  const { rows } = await pool.query<UserRow>(
+    `SELECT * FROM users
+     WHERE LOWER(username) = LOWER($1)
+       AND ($2::uuid IS NULL OR id != $2)`,
+    [username.trim(), excludeUserId || null]
+  );
+  return rows[0] ? toUser(rows[0]) : null;
+}
+
+/**
+ * DM: Fetch all users for the user directory (excludes the requesting user).
+ */
+export async function getAllUsers(excludeUserId?: string): Promise<User[]> {
+  const { rows } = await pool.query<UserRow>(
+    `SELECT * FROM users
+     WHERE ($1::uuid IS NULL OR id != $1)
+     ORDER BY is_online DESC, username ASC`,
+    [excludeUserId || null]
+  );
+  return rows.map(toUser);
+}
+

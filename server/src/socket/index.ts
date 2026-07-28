@@ -36,6 +36,16 @@ export function registerSocketHandlers(io: TypedServer): void {
         );
       }
 
+      // Join all rooms the user is a member of
+      const { rows: userRooms } = await pool.query(
+        "SELECT room_id FROM room_members WHERE user_id = $1",
+        [user.userId]
+      );
+      userRooms.forEach((r) => socket.join(r.room_id));
+
+      // Join a personal room for direct events or forced joins
+      socket.join(user.userId);
+
       chatHandler(io, authenticatedSocket);
 
     } catch (err) {

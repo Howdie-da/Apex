@@ -3,16 +3,41 @@
 // Apex Root Entry Point — Real Auth & Socket Wiring (Zustand)
 // ============================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, ReactNode } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { useChatStore } from './store/useChatStore';
 import { socket } from './config/socket';
 import AuthPage from './features/auth/AuthPage';
 import ChatApp from './components/ChatApp';
 
+const AuthGuard: React.FC<{ children: ReactNode; requireAuth: boolean }> = ({ children, requireAuth }) => {
+  const { user, isLoading } = useAuthStore();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center select-none bg-background text-foreground">
+        <span className="font-mono text-xs tracking-wider text-muted-foreground">
+          [ Initializing Apex... ]
+        </span>
+      </div>
+    );
+  }
+
+  if (requireAuth && !user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!requireAuth && user) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+};
+
 const ApexMainApp: React.FC = () => {
-  const { user, isLoading, accessToken, logout } = useAuthStore();
-  const { addMessage, addTypingUser, removeTypingUser, setConnected } = useChatStore();
+  const { accessToken, logout } = useAuthStore();
+  const { addMessage, addTypingUser, removeTypingUser, setConnected, updateMessageReactions, addRoom, updateUserStatus, handleReadReceipt } = useChatStore();
 
   // Socket Connection and Global Listeners
   useEffect(() => {
@@ -38,6 +63,14 @@ const ApexMainApp: React.FC = () => {
     const onMessage = (message: any) => addMessage(message);
     const onTyping = (data: any) => addTypingUser(data.roomId, data.userId, data.username);
     const onStopTyping = (data: any) => removeTypingUser(data.roomId, data.userId);
+    const onReaction = (data: any) => updateMessageReactions(data.messageId, data.reactions);
+    const onRoomCreated = (room: any) => {
+      addRoom(room);
+      socket.emit('chat:join', { roomId: room.id });
+    };
+    const onUserOnline = (data: { userId: string; username: string }) => updateUserStatus(data.userId, true);
+    const onUserOffline = (data: { userId: string; username: string }) => updateUserStatus(data.userId, false);
+    const onReadReceipt = (data: { roomId: string; readerId: string; messageIds: string[] }) => handleReadReceipt(data.messageIds);
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
@@ -45,6 +78,11 @@ const ApexMainApp: React.FC = () => {
     socket.on('chat:message', onMessage);
     socket.on('chat:typing', onTyping);
     socket.on('chat:stop-typing', onStopTyping);
+    socket.on('chat:reaction', onReaction);
+    socket.on('room:created', onRoomCreated);
+    socket.on('user:online', onUserOnline);
+    socket.on('user:offline', onUserOffline);
+    socket.on('chat:read-receipt', onReadReceipt);
 
     return () => {
       socket.off('connect', onConnect);
@@ -53,24 +91,36 @@ const ApexMainApp: React.FC = () => {
       socket.off('chat:message', onMessage);
       socket.off('chat:typing', onTyping);
       socket.off('chat:stop-typing', onStopTyping);
+      socket.off('chat:reaction', onReaction);
+      socket.off('room:created', onRoomCreated);
+      socket.off('user:online', onUserOnline);
+      socket.off('user:offline', onUserOffline);
+      socket.off('chat:read-receipt', onReadReceipt);
     };
-  }, [accessToken, logout, addMessage, addTypingUser, removeTypingUser, setConnected]);
+  }, [accessToken, logout, addMessage, addTypingUser, removeTypingUser, setConnected, updateMessageReactions, addRoom, updateUserStatus, handleReadReceipt]);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center select-none bg-background text-foreground">
-        <span className="font-mono text-xs tracking-wider text-muted-foreground">
-          [ Initializing Apex... ]
-        </span>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <AuthPage />;
-  }
-
-  return <ChatApp />;
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route 
+          path="/auth" 
+          element={
+            <AuthGuard requireAuth={false}>
+              <AuthPage />
+            </AuthGuard>
+          } 
+        />
+        <Route 
+          path="/" 
+          element={
+            <AuthGuard requireAuth={true}>
+              <ChatApp />
+            </AuthGuard>
+          } 
+        />
+      </Routes>
+    </BrowserRouter>
+  );
 };
 
 export const App: React.FC = () => {

@@ -7,19 +7,36 @@ export interface User {
   username: string;
   displayName: string;
   avatarUrl: string | null;
-  publicKey: string | null; // Phase 2: E2EE public key
+  publicKey: string | null; // Phase 2: E2EE ECDH P-256 SPKI Base64
   isOnline: boolean;
-  lastSeen: string; // ISO string representation
+  lastSeen: string;
   createdAt: string;
+}
+
+export interface Reaction {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
+export interface ReplyPreview {
+  id: string;
+  content: string;
+  senderDisplayName: string;
 }
 
 export interface Message {
   id: string;
   senderId: string;
   roomId: string;
-  content: string;
+  content: string;        // Plaintext after decryption (for 'encrypted' type, raw ciphertext until decrypted)
+  decrypted?: string;     // Resolved plaintext when type === 'encrypted'
   type: 'text' | 'image' | 'system' | 'encrypted';
-  createdAt: string; // ISO string representation
+  replyTo: string | null;
+  replyToMessage: ReplyPreview | null;
+  reactions: Reaction[];
+  createdAt: string;
+  isRead?: boolean;
   sender: {
     id: string;
     username: string;
@@ -32,8 +49,19 @@ export interface Room {
   id: string;
   name: string;
   type: 'direct' | 'group';
+  isEncrypted: boolean;
   createdBy: string | null;
-  createdAt: string;
+  createdAt: string | Date;
+  lastActivityAt?: string | Date | null;
+  unreadCount?: number;
+  dmUser?: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string | null;
+    isOnline?: boolean;
+    lastSeen?: Date | string;
+  } | null;
 }
 
 export interface AuthResponse {

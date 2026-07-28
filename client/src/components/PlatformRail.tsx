@@ -23,6 +23,7 @@ interface PlatformRailProps {
   getUnreadCount: (c: CategoryId) => number;
   onLogout?: () => void;
   onToggleCollapse?: () => void;
+  onSettingsClick?: () => void;
 }
 
 const NAV_ITEMS: { id: CategoryId; Icon: React.FC<React.SVGProps<SVGSVGElement>>; label: string }[] = [
@@ -43,6 +44,7 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
   getUnreadCount,
   onLogout,
   onToggleCollapse,
+  onSettingsClick,
 }) => {
   return (
     <nav
@@ -110,6 +112,7 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
         <button
           aria-label="Settings"
           title="Settings"
+          onClick={onSettingsClick}
           className="w-11 h-11 border border-transparent text-muted-foreground hover:border-foreground hover:bg-foreground hover:text-background flex items-center justify-center transition-colors"
         >
           <Settings className="w-4.5 h-4.5" />

@@ -12,6 +12,9 @@ import { registerSocketHandlers } from './socket/index';
 import authRoutes from './routes/auth';
 import roomsRouter from './routes/rooms';
 import healthRoutes from './routes/health';
+import keysRouter from './routes/keys';
+import reactionsRouter from './routes/reactions';
+import usersRouter from './routes/users';
 import type { ClientToServerEvents, ServerToClientEvents } from './types/socket';
 
 const log = logger.child({ module: 'server' });
@@ -28,6 +31,9 @@ async function main(): Promise<void> {
 
   app.use('/api/auth', authRoutes);
   app.use('/api/rooms', roomsRouter);
+  app.use('/api/keys', keysRouter);
+  app.use('/api/messages', reactionsRouter);
+  app.use('/api/users', usersRouter);
   app.use('/', healthRoutes);
 
   const httpServer = http.createServer(app);
@@ -44,6 +50,8 @@ async function main(): Promise<void> {
 
   io.use(authSocketMiddleware);
   registerSocketHandlers(io);
+  app.set('io', io);
+  
   try {
     await initDB();
     log.info('Database initialized');

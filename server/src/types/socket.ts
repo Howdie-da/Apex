@@ -1,7 +1,8 @@
 import { Socket, Server } from 'socket.io';
-import type { Message, User, JwtPayload } from './index';
+import type { Message, User, JwtPayload, Reaction } from './index';
 
 export interface ServerToClientEvents {
+  'room:created': (room: import('./index').Room) => void;
   'chat:message': (message: Message) => void;
 
   'chat:history': (messages: Message[]) => void;
@@ -14,6 +15,11 @@ export interface ServerToClientEvents {
 
   'chat:user-left': (data: { user: User; roomId: string }) => void;
 
+  // Phase 2: Real-time reaction updates
+  'chat:reaction': (data: { messageId: string; reactions: Reaction[] }) => void;
+  
+  'chat:read-receipt': (data: { roomId: string; readerId: string; messageIds: string[] }) => void;
+
   'user:online': (data: { userId: string; username: string }) => void;
 
   'user:offline': (data: { userId: string; username: string }) => void;
@@ -24,13 +30,18 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   'chat:join': (data: { roomId: string }) => void;
 
-  'chat:message': (data: { roomId: string; content: string; type?: string }) => void;
+  // Phase 2: replyTo support
+  'chat:message': (data: { roomId: string; content: string; type?: string; replyTo?: string }) => void;
 
   'chat:typing': (data: { roomId: string }) => void;
 
   'chat:stop-typing': (data: { roomId: string }) => void;
 
   'chat:history': (data: { roomId: string; before?: string }) => void;
+
+  // Phase 2: Real-time reactions
+  'chat:react': (data: { messageId: string; emoji: string; roomId: string }) => void;
+  'chat:unreact': (data: { messageId: string; emoji: string; roomId: string }) => void;
 }
 
 export type AuthenticatedSocket = Socket<

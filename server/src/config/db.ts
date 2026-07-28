@@ -47,8 +47,14 @@ export async function initDB(): Promise<void> {
         name        VARCHAR(100) NOT NULL,
         type        VARCHAR(20) DEFAULT 'group',
         created_by  UUID REFERENCES users(id),
-        created_at  TIMESTAMPTZ DEFAULT NOW()
+        created_at  TIMESTAMPTZ DEFAULT NOW(),
+        last_activity_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
+
+    // Ensure last_activity_at exists on older schemas
+    await client.query(`
+      ALTER TABLE rooms ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ DEFAULT NOW();
     `);
 
     // Create default "General" room if it doesn't exist
@@ -77,14 +83,47 @@ export async function initDB(): Promise<void> {
         room_id    UUID NOT NULL REFERENCES rooms(id),
         content    TEXT NOT NULL,
         type       VARCHAR(20) DEFAULT 'text',
+        reply_to   UUID REFERENCES messages(id) ON DELETE SET NULL,
+        is_read    BOOLEAN DEFAULT FALSE,
         created_at TIMESTAMPTZ DEFAULT NOW()
       );
+    `);
+
+    // Ensure is_read exists on older schemas
+    await client.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;
     `);
 
     // Complex index for efficient message retrieval per room. For cursor-based pagination:
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_messages_room_time
         ON messages (room_id, created_at DESC);
+    `);
+
+    // MESSAGE REACTIONS (Phase 2)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS message_reactions (
+        message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+        user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        emoji      VARCHAR(10) NOT NULL,
+        created_at TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (message_id, user_id, emoji)
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_reactions_message
+        ON message_reactions (message_id);
+    `);
+
+    // Add reply_to column to existing tables if upgrading
+    await client.query(`
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS reply_to UUID REFERENCES messages(id) ON DELETE SET NULL;
+    `);
+
+    // Add is_encrypted flag to rooms (Phase 2)
+    await client.query(`
+      ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_encrypted BOOLEAN DEFAULT FALSE;
     `);
 
     // REFRESH TOKENS

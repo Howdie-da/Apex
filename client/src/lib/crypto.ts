@@ -1,41 +1,144 @@
 // ============================================
 // client/src/lib/crypto.ts
+// Phase 2 E2EE: Real P-256 ECDH + AES-256-GCM Implementation
+// Uses browser-native SubtleCrypto (no external library)
 // ============================================
 
-export interface CryptoKeyPair {
-  publicKey: string;
-  privateKey: string;
+const ECDH_PARAMS: EcKeyGenParams = { name: 'ECDH', namedCurve: 'P-256' };
+const AES_PARAMS: AesKeyGenParams = { name: 'AES-GCM', length: 256 };
+
+export interface ExportedKeyPair {
+  /** SPKI Base64 — safe to send to server and other users */
+  publicKeyB64: string;
+  /** PKCS8 Base64 — must never leave the device */
+  privateKeyB64: string;
+}
+
+// ─── Key Generation ─────────────────────────────────────────────────────────
+
+/**
+ * Generate a new P-256 ECDH key pair.
+ * Returns raw CryptoKey objects for use in the same session,
+ * plus Base64 exports for persistence.
+ */
+export async function generateKeyPair(): Promise<{
+  keyPair: CryptoKeyPair;
+  exported: ExportedKeyPair;
+}> {
+  const keyPair = await crypto.subtle.generateKey(ECDH_PARAMS, true, ['deriveKey', 'deriveBits']);
+
+  const publicKeyRaw = await crypto.subtle.exportKey('spki', keyPair.publicKey);
+  const privateKeyRaw = await crypto.subtle.exportKey('pkcs8', keyPair.privateKey);
+
+  return {
+    keyPair,
+    exported: {
+      publicKeyB64: arrayBufferToBase64(publicKeyRaw),
+      privateKeyB64: arrayBufferToBase64(privateKeyRaw),
+    },
+  };
+}
+
+// ─── Key Import ──────────────────────────────────────────────────────────────
+
+/**
+ * Import an SPKI Base64 public key for ECDH derivation.
+ */
+export async function importPublicKey(spkiB64: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'spki',
+    base64ToArrayBuffer(spkiB64),
+    ECDH_PARAMS,
+    true,
+    []
+  );
 }
 
 /**
- * Placeholder interface for client-side E2E encryption.
- * Will be implemented in Phase 2 using libsodium.
+ * Import a PKCS8 Base64 private key for ECDH derivation.
  */
-export const cryptoService = {
-  /**
-   * Phase 2 E2EE: Generate asymmetric X25519 key pair.
-   */
-  async generateKeyPair(): Promise<CryptoKeyPair> {
-    // Stub implementation
-    return {
-      publicKey: 'stub_public_key_x25519_' + Math.random().toString(36).substring(7),
-      privateKey: 'stub_private_key_x25519_' + Math.random().toString(36).substring(7),
-    };
-  },
+export async function importPrivateKey(pkcs8B64: string): Promise<CryptoKey> {
+  return crypto.subtle.importKey(
+    'pkcs8',
+    base64ToArrayBuffer(pkcs8B64),
+    ECDH_PARAMS,
+    false, // private keys are not extractable after import
+    ['deriveKey', 'deriveBits']
+  );
+}
 
-  /**
-   * Phase 2 E2EE: Encrypt plaintext using recipient's public key.
-   */
-  async encrypt(plaintext: string, _recipientPublicKey: string): Promise<string> {
-    // Currently return raw plaintext (E2EE active in Phase 2)
-    return plaintext;
-  },
+// ─── Shared Key Derivation ───────────────────────────────────────────────────
 
-  /**
-   * Phase 2 E2EE: Decrypt ciphertext using sender's public key and user's private key.
-   */
-  async decrypt(ciphertext: string): Promise<string> {
-    // Currently return raw ciphertext
-    return ciphertext;
-  },
-};
+/**
+ * Derive a shared AES-256-GCM key from our private key and the recipient's public key.
+ * This is the ECDH handshake — both sides arrive at the same secret independently.
+ */
+export async function deriveSharedKey(
+  ownPrivateKey: CryptoKey,
+  recipientPublicKeyB64: string
+): Promise<CryptoKey> {
+  const recipientPubKey = await importPublicKey(recipientPublicKeyB64);
+
+  return crypto.subtle.deriveKey(
+    { name: 'ECDH', public: recipientPubKey },
+    ownPrivateKey,
+    AES_PARAMS,
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+// ─── Encrypt / Decrypt ───────────────────────────────────────────────────────
+
+/**
+ * Encrypt a plaintext string with AES-256-GCM.
+ * Returns a compact `<iv_b64>:<ciphertext_b64>` string.
+ */
+export async function encryptMessage(plaintext: string, sharedKey: CryptoKey): Promise<string> {
+  const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV for GCM
+  const encoded = new TextEncoder().encode(plaintext);
+
+  const cipherBuffer = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    sharedKey,
+    encoded
+  );
+
+  return `${arrayBufferToBase64(iv.buffer)}:${arrayBufferToBase64(cipherBuffer)}`;
+}
+
+/**
+ * Decrypt an `<iv_b64>:<ciphertext_b64>` string back to plaintext.
+ * Throws if tampered or wrong key — AES-GCM is authenticated.
+ */
+export async function decryptMessage(payload: string, sharedKey: CryptoKey): Promise<string> {
+  const [ivB64, ciphertextB64] = payload.split(':');
+  if (!ivB64 || !ciphertextB64) throw new Error('Invalid encrypted payload format');
+
+  const iv = base64ToArrayBuffer(ivB64);
+  const ciphertext = base64ToArrayBuffer(ciphertextB64);
+
+  const plainBuffer = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv },
+    sharedKey,
+    ciphertext
+  );
+
+  return new TextDecoder().decode(plainBuffer);
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+function base64ToArrayBuffer(b64: string): ArrayBuffer {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}

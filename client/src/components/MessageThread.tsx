@@ -1,7 +1,7 @@
 // ============================================
 // client/src/components/MessageThread.tsx
-// Column 3: Message Thread — Real-time Socket.io & REST (80% compact ratio)
-// Includes Top DetailsPanel Popup
+// Column 3: Message Thread — Real-time Socket.io & REST
+// Phase 2: Reactions, Replies, E2EE display
 // ============================================
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -9,10 +9,14 @@ import {
   ArrowLeft,
   Hash,
   SendHorizontal,
+  CornerUpLeft,
+  X,
+  CheckCheck,
 } from 'lucide-react';
-import type { Message, Room } from '../types/index';
+import type { Message, Room, Reaction } from '../types/index';
 import type { User } from '../types/index';
 import DetailsPanel from './DetailsPanel';
+import { useChatStore } from '../store/useChatStore';
 
 interface MessageThreadProps {
   room: Room | null;
@@ -20,13 +24,15 @@ interface MessageThreadProps {
   currentUser: User | null;
   typingUsers: string[];
   loadingHistory: boolean;
-  onSendMessage: (content: string) => void;
+  onSendMessage: (content: string, replyTo?: string) => void;
   onTyping: () => void;
   onStopTyping: () => void;
   detailsOpen: boolean;
   onToggleDetails: () => void;
   onBack?: () => void;
 }
+
+const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
 function getAvatarInitials(name: string): string {
   const cleaned = name.replace(/[^a-zA-Z0-9]/g, '');
@@ -42,6 +48,55 @@ function formatTime(isoString: string): string {
   }
 }
 
+// ─── Reaction Bar ──────────────────────────────────────────────────────────────
+interface ReactionBarProps {
+  reactions: Reaction[];
+  currentUserId: string | undefined;
+  onToggle: (emoji: string, alreadyReacted: boolean) => void;
+}
+
+const ReactionBar: React.FC<ReactionBarProps> = ({ reactions, currentUserId, onToggle }) => {
+  if (reactions.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {reactions.map((r, idx) => (
+        <button
+          key={idx}
+          onClick={() => onToggle(r.emoji, r.userIds.includes(currentUserId || ''))}
+          className={`flex items-center gap-1 px-2 py-0.5 text-xs transition-colors rounded-none shadow-sm border ${
+            r.userIds.includes(currentUserId || '')
+              ? 'bg-zinc-800 text-zinc-100 border-zinc-700'
+              : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200'
+          }`}
+        >
+          <span>{r.emoji}</span>
+          <span className="font-mono text-[10px]">{r.count}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// ─── Emoji Picker Popup ────────────────────────────────────────────────────────
+interface EmojiPickerProps {
+  onPick: (emoji: string) => void;
+}
+
+const EmojiPicker: React.FC<EmojiPickerProps> = ({ onPick }) => (
+  <div className="flex gap-1 bg-zinc-900 border border-zinc-700 p-1.5 shadow-lg rounded-none">
+    {QUICK_REACTIONS.map((e) => (
+      <button
+        key={e}
+        onClick={() => onPick(e)}
+        className="text-base hover:scale-125 transition-transform px-0.5"
+        title={e}
+      >
+        {e}
+      </button>
+    ))}
+  </div>
+);
+
 export const MessageThread: React.FC<MessageThreadProps> = ({
   room,
   messages,
@@ -56,38 +111,64 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
   onBack,
 }) => {
   const [inputText, setInputText] = useState('');
+  const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
+  const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
 
+  const { replyTo, setReplyTo, reactToMessage, removeReaction, markRoomRead } = useChatStore();
+
+  // Mark room as read when viewing a DM with unread messages
+  useEffect(() => {
+    if (room && room.type === 'direct' && (room.unreadCount || 0) > 0) {
+      markRoomRead(room.id);
+    }
+  }, [room?.id, room?.unreadCount, markRoomRead, messages.length]);
+
   // Scroll to bottom on new message
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages.length]);
+
+  // Close emoji picker on outside click
+  useEffect(() => {
+    if (!emojiPickerFor) return;
+    const handler = () => setEmojiPickerFor(null);
+    window.addEventListener('click', handler);
+    return () => window.removeEventListener('click', handler);
+  }, [emojiPickerFor]);
 
   if (!room) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background p-6 select-none">
+      <div className="flex-1 min-h-screen flex items-center justify-center bg-background p-6 select-none">
         <span className="font-mono text-xs tracking-wider text-muted-foreground">
-          Select a room
+          Select a chat to start messaging
         </span>
       </div>
     );
   }
 
-  const roomName = room.name;
-  const displayName = `#${roomName}`;
-  const initials = getAvatarInitials(roomName);
+  const isDirect = room.type === 'direct';
+  const dmUser = room.dmUser;
+  
+  const roomName = isDirect && dmUser
+    ? (dmUser.displayName || dmUser.username)
+    : room.name;
+    
+  const displayName = isDirect ? roomName : `#${roomName}`;
+  const initials = isDirect && dmUser 
+    ? getAvatarInitials(dmUser.displayName || dmUser.username) 
+    : getAvatarInitials(roomName);
 
   const handleSend = () => {
     const trimmed = inputText.trim();
     if (!trimmed) return;
-    onSendMessage(trimmed);
+    onSendMessage(trimmed, replyTo?.id);
     setInputText('');
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-    }
+    setReplyTo(null);
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     if (isTypingRef.current) {
       isTypingRef.current = false;
       onStopTyping();
@@ -97,6 +178,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+    if (e.key === 'Escape' && replyTo) { setReplyTo(null); return; }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -120,8 +202,29 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     }, 2000);
   };
 
+  const handleEmojiPick = (messageId: string, emoji: string) => {
+    const msg = messages.find((m) => m.id === messageId);
+    const alreadyReacted = msg?.reactions.some(
+      (r) => r.emoji === emoji && currentUser && r.userIds.includes(currentUser.id)
+    );
+    if (alreadyReacted) {
+      removeReaction(messageId, emoji, room.id);
+    } else {
+      reactToMessage(messageId, emoji, room.id);
+    }
+    setEmojiPickerFor(null);
+  };
+
+  const handleReactionToggle = (messageId: string, emoji: string, alreadyReacted: boolean) => {
+    if (alreadyReacted) {
+      removeReaction(messageId, emoji, room.id);
+    } else {
+      reactToMessage(messageId, emoji, room.id);
+    }
+  };
+
   const isEmpty = !inputText.trim();
-  const placeholderText = `Message #${roomName}...`;
+  const placeholderText = `Message ${isDirect ? '' : '#'}${roomName}...`;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-background min-w-0">
@@ -148,7 +251,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             aria-label="Toggle Channel Details"
           >
             {/* Avatar Tile */}
-            <div className="w-8 h-8 font-mono text-xs font-bold border border-border bg-card text-foreground flex items-center justify-center shrink-0 group-hover:border-foreground transition-colors">
+            <div className="w-8 h-8 font-mono text-xs font-bold bg-primary/10 text-primary flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors rounded-none">
               {initials}
             </div>
 
@@ -161,22 +264,35 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 </span>
               </h1>
               <div className="font-mono text-[10px] tracking-wider text-muted-foreground flex items-center gap-1.5 mt-0.5">
-                <span className="w-1.5 h-1.5 shrink-0 bg-foreground" />
-                <span>Apex Net / Online</span>
+                {room.type === 'direct' ? (
+                  <>
+                    <span className="w-1.5 h-1.5 shrink-0 bg-foreground" />
+                    <span>Direct Message /</span>
+                    {room.dmUser?.isOnline ? (
+                      <span className="bg-foreground text-background px-1.5 py-0 rounded-none font-bold">Online</span>
+                    ) : (
+                      <span>Offline</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="w-1.5 h-1.5 shrink-0 bg-foreground" />
+                    <span>Apex Net</span>
+                  </>
+                )}
               </div>
             </div>
           </button>
         </div>
       </header>
 
-      {/* Top Details Panel Popup (Pops down from top of MessageThread) */}
+      {/* Top Details Panel Popup */}
       {detailsOpen && (
         <DetailsPanel room={room} onClose={onToggleDetails} />
       )}
 
       {/* Scrollable Thread Body */}
-      <div className="flex-1 overflow-y-auto p-3.5 md:p-4 space-y-3.5">
-        {/* Loading Indicator */}
+      <div className="flex-1 overflow-y-auto p-3.5 md:p-4 space-y-3.5 w-full">
         {loadingHistory && (
           <div className="flex justify-center py-2">
             <span className="font-mono text-[11px] tracking-wider text-muted-foreground">
@@ -185,18 +301,16 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           </div>
         )}
 
-        {/* Top Section Divider */}
         {!loadingHistory && (
           <div className="flex items-center gap-3.5 my-2">
             <div className="flex-1 border-t border-border" />
             <span className="font-mono text-[11px] tracking-wider text-muted-foreground shrink-0">
-              — Start of #{roomName} —
+              — Start of {room.type !== 'direct' ? `#` : ''}{roomName} —
             </span>
             <div className="flex-1 border-t border-border" />
           </div>
         )}
 
-        {/* Empty State */}
         {!loadingHistory && messages.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center select-none">
             <div className="w-18 h-18 border border-foreground bg-foreground text-background flex items-center justify-center mb-3.5">
@@ -213,47 +327,116 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           const isMine = msg.senderId === currentUser?.id;
           const timeLabel = formatTime(msg.createdAt);
           const senderName = msg.sender?.displayName || msg.sender?.username || 'User';
+          const displayContent = msg.decrypted ?? msg.content;
+          const isHovered = hoveredMsgId === msg.id;
 
           return (
             <div
               key={msg.id}
               className={`flex w-full ${isMine ? 'justify-end' : 'justify-start'}`}
+              onMouseEnter={() => setHoveredMsgId(msg.id)}
+              onMouseLeave={() => { setHoveredMsgId(null); setEmojiPickerFor(null); }}
             >
-              <div className={`flex flex-col max-w-[78%] sm:max-w-[70%] ${isMine ? 'items-end' : 'items-start'}`}>
-                {/* Mesmerizing Brutalist Chat Bubble */}
-                <div
-                  className={`p-3 sm:p-3.5 leading-relaxed whitespace-pre-wrap select-text relative flex flex-col transition-colors ${
-                    isMine
-                      ? 'bg-[#1c1c20] text-foreground border-x border-b border-border shadow-sm'
-                      : 'bg-[#121215] text-foreground border border-border'
-                  }`}
-                >
-                  {/* Sender Name Header */}
+              <div className={`flex flex-col max-w-[85%] md:max-w-md min-w-0 ${isMine ? 'items-end' : 'items-start'}`}>
+
+                {/* Chat Bubble + Action Buttons Container */}
+                <div className={`flex flex-col gap-1 group ${isMine ? 'items-end' : 'items-start'}`}>
+                  {/* Message Bubble */}
                   <div
-                    className={`font-mono text-[11px] font-bold tracking-wider pb-1 mb-1 flex items-center justify-between gap-3 border-b ${
+                    className={`p-3 select-text relative flex flex-col min-w-20 gap-1.5 transition-colors shadow-sm rounded-none ${
                       isMine
-                        ? 'text-foreground border-border/40'
-                        : 'text-muted-foreground border-border/30'
+                        ? 'bg-zinc-200 text-zinc-900'
+                        : 'bg-zinc-800 text-zinc-100 border border-zinc-700'
                     }`}
                   >
-                    <span>{isMine ? 'You' : senderName}</span>
-                    {msg.type === 'encrypted' && (
-                      <span className="font-mono text-[8px] tracking-widest px-1 py-0.2 border border-border text-muted-foreground uppercase">
-                        E2EE
-                      </span>
+                    {/* Reply Preview (Moved Inside Bubble) */}
+                    {msg.replyToMessage && (() => {
+                      const isReplyMine = msg.replyToMessage.senderDisplayName === currentUser?.displayName;
+                      return (
+                        <div className={`p-2 mb-1.5 flex flex-col min-w-0 max-w-full overflow-hidden border ${
+                          isReplyMine
+                            ? 'bg-zinc-200 text-zinc-900 border-zinc-300 selection:bg-zinc-900 selection:text-zinc-100'
+                            : 'bg-zinc-800 text-zinc-100 border-zinc-700 selection:bg-zinc-200 selection:text-zinc-900'
+                        } ${isMine ? 'text-right' : 'text-left'}`}>
+                          <p className={`font-mono text-[10px] truncate ${isReplyMine ? 'text-zinc-900/80' : 'text-zinc-300'}`}>
+                            {msg.replyToMessage.content.length > 15 ? msg.replyToMessage.content.slice(0, 15) + '...' : msg.replyToMessage.content}
+                          </p>
+                        </div>
+                      );
+                    })()}
+
+                    <div className={`flex flex-col gap-1.5 ${isMine ? 'selection:bg-zinc-900 selection:text-zinc-100' : 'selection:bg-zinc-200 selection:text-zinc-900'}`}>
+                      {/* Sender Name Header */}
+                      {room?.type !== 'direct' && (
+                        <div
+                          className={`font-mono text-[11px] font-bold tracking-wider pb-1 flex items-center justify-between gap-3 border-b ${
+                            isMine
+                              ? 'text-zinc-900/80 border-zinc-900/15'
+                              : 'text-zinc-400 border-zinc-700'
+                          }`}
+                        >
+                          <span>{isMine ? 'You' : senderName}</span>
+                        </div>
+                      )}
+
+                      {/* Message Content */}
+                      <div className="wrap-break-words font-sans text-sm leading-relaxed">
+                        {displayContent}
+                      </div>
+
+                      {/* Timestamp & Read Receipt */}
+                      <div className={`self-end flex items-center gap-1 font-mono text-[10px] tracking-wider select-none ${
+                        isMine ? 'text-zinc-900/60' : 'text-zinc-400'
+                      }`}>
+                        {timeLabel}
+                        {isMine && room?.type === 'direct' && (
+                          <CheckCheck className={`w-3 h-3 ${msg.isRead ? 'text-zinc-900' : 'text-zinc-900/30'}`} />
+                        )}
+                      </div>
+                    </div>
+                    {/* Hover Action Buttons (Floating Rigid Box) */}
+                    {isHovered && (
+                      <div className={`absolute top-0 flex flex-row border border-zinc-700 bg-zinc-900 ${isMine ? 'right-full mr-2' : 'left-full ml-2'} z-10`}>
+                        {/* Reply */}
+                        <button
+                          onClick={() => setReplyTo(msg)}
+                          className="w-7 h-7 rounded-none bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors flex items-center justify-center border-r border-zinc-700"
+                          title="Reply"
+                        >
+                          <CornerUpLeft className="w-3.5 h-3.5" />
+                        </button>
+
+                        {/* React */}
+                        <div className="relative w-fit">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEmojiPickerFor(emojiPickerFor === msg.id ? null : msg.id);
+                            }}
+                            className="w-7 h-7 rounded-none bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors flex items-center justify-center text-sm"
+                            title="React"
+                          >
+                            +
+                          </button>
+                          {emojiPickerFor === msg.id && (
+                            <div className="absolute bottom-full mb-1 z-50 left-1/2 -translate-x-1/2">
+                              <EmojiPicker onPick={(emoji) => handleEmojiPick(msg.id, emoji)} />
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-
-                  {/* Message Content */}
-                  <div className="wrap-break-words font-sans text-sm text-foreground">
-                    {msg.content}
-                  </div>
-
-                  {/* Timestamp */}
-                  <div className="self-end font-mono text-[10px] tracking-wider text-muted-foreground mt-1 select-none">
-                    {timeLabel}
-                  </div>
                 </div>
+
+                {/* Reactions */}
+                {msg.reactions && msg.reactions.length > 0 && (
+                  <ReactionBar
+                    reactions={msg.reactions}
+                    currentUserId={currentUser?.id}
+                    onToggle={(emoji, alreadyReacted) => handleReactionToggle(msg.id, emoji, alreadyReacted)}
+                  />
+                )}
               </div>
             </div>
           );
@@ -273,12 +456,34 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           </div>
         )}
 
-        <div ref={scrollRef} />
+          {/* Empty space for scrolling down */}
+          <div ref={scrollRef} className="h-2" />
       </div>
 
+      {/* Reply Banner */}
+      {replyTo && (
+        <div className="px-3 pt-2 pb-0 border-t border-border/50 bg-background/80 flex items-start justify-between gap-3 shrink-0">
+          <div className="flex flex-col min-w-0">
+            <span className="font-mono text-[10px] text-muted-foreground tracking-wider">
+              ↩ Replying to <span className="text-foreground font-bold">{replyTo.sender?.displayName || 'User'}</span>
+            </span>
+            <p className="font-mono text-[10px] text-muted-foreground/70 truncate mt-0.5">
+              {((replyTo.decrypted ?? replyTo.content).length > 15) ? (replyTo.decrypted ?? replyTo.content).slice(0, 15) + '...' : (replyTo.decrypted ?? replyTo.content)}
+            </p>
+          </div>
+          <button
+            onClick={() => setReplyTo(null)}
+            className="shrink-0 text-muted-foreground hover:text-foreground transition-colors mt-0.5"
+            title="Cancel reply"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Composer Container */}
-      <div className="p-3 border-t border-border bg-background shrink-0">
-        <div className="border border-border focus-within:border-foreground bg-card transition-colors flex items-end p-1">
+      <div className="p-3 border-t border-border/50 bg-background/80 backdrop-blur-sm shrink-0 w-full">
+        <div className="border border-border/50 focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-primary/50 bg-card transition-all flex items-end p-1 rounded-none shadow-sm">
           <textarea
             ref={textareaRef}
             rows={1}
@@ -286,8 +491,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             onChange={handleTextareaChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholderText}
-            className="flex-1 py-2 px-3 text-xs sm:text-sm font-mono bg-transparent focus:outline-none resize-none placeholder:text-muted-foreground placeholder:tracking-wider text-foreground caret-foreground"
-            style={{ maxHeight: '128px', minHeight: '38px' }}
+            className="flex-1 py-2.5 px-3 text-xs sm:text-sm font-sans bg-transparent focus:outline-none resize-none placeholder:text-muted-foreground placeholder:tracking-wider text-foreground caret-primary"
+            style={{ maxHeight: '128px', minHeight: '42px' }}
           />
 
           <button
@@ -296,10 +501,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             disabled={isEmpty}
             aria-label="Send Message"
             title="Send Message"
-            className={`w-9 h-9 border flex items-center justify-center shrink-0 transition-colors ml-1 ${
+            className={`w-9 h-9 flex items-center justify-center shrink-0 transition-all ml-1 rounded-none mb-0.5 mr-0.5 ${
               isEmpty
-                ? 'bg-muted text-muted-foreground border-border opacity-40 cursor-not-allowed'
-                : 'bg-foreground text-background border-foreground hover:bg-secondary hover:text-foreground cursor-pointer'
+                ? 'bg-muted text-muted-foreground/50 cursor-not-allowed'
+                : 'bg-primary text-primary-foreground shadow-md hover:opacity-90 cursor-pointer'
             }`}
           >
             <SendHorizontal className="w-4 h-4" />
