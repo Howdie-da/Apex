@@ -1,11 +1,11 @@
 // ============================================
 // client/src/components/ConversationList.tsx
 // Column 2: Conversation List — Real Backend Rooms (80% compact ratio)
-// Supports Collapsed Mode (coverImage / tag tile only)
+// Supports Collapsed Mode (coverImage / tag tile only) & Rail Expand Toggle
 // ============================================
 
 import React from 'react';
-import { Search } from 'lucide-react';
+import { Search, PanelLeftOpen } from 'lucide-react';
 import type { Room } from '../types/index';
 import type { CategoryId } from '../lib/chatData';
 import { CATEGORY_NAMES } from '../lib/chatData';
@@ -18,6 +18,8 @@ interface ConversationListProps {
   searchQuery: string;
   onSearch: (q: string) => void;
   isCollapsed?: boolean;
+  railCollapsed?: boolean;
+  onToggleRailCollapse?: () => void;
 }
 
 export const ConversationList: React.FC<ConversationListProps> = ({
@@ -28,6 +30,8 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   searchQuery,
   onSearch,
   isCollapsed = false,
+  railCollapsed = false,
+  onToggleRailCollapse,
 }) => {
   const categoryTitle = CATEGORY_NAMES[category] || 'Channels';
 
@@ -50,10 +54,22 @@ export const ConversationList: React.FC<ConversationListProps> = ({
     >
       {/* Header */}
       <div className={`px-3 sm:px-4 pt-3.5 pb-2.5 border-b border-border shrink-0 ${isCollapsed ? 'text-center px-1' : ''}`}>
-        <div className="mb-0.5">
+        <div className="flex items-center justify-between mb-0.5">
           <span className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
             {isCollapsed ? 'Apex' : 'Apex Messenger'}
           </span>
+
+          {/* Expand Rail Button when Rail is Collapsed */}
+          {railCollapsed && onToggleRailCollapse && (
+            <button
+              onClick={onToggleRailCollapse}
+              className="p-1 border border-border text-muted-foreground hover:border-foreground hover:bg-foreground hover:text-background transition-colors shrink-0"
+              title="Expand Navigation Rail"
+              aria-label="Expand Navigation Rail"
+            >
+              <PanelLeftOpen className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
         {!isCollapsed && (
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight leading-none text-foreground truncate">

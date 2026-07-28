@@ -245,7 +245,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                   </div>
 
                   {/* Message Content */}
-                  <div className="break-words font-sans text-sm text-foreground">
+                  <div className="wrap-break-words font-sans text-sm text-foreground">
                     {msg.content}
                   </div>
 

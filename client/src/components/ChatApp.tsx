@@ -1,7 +1,7 @@
 // ============================================
 // client/src/components/ChatApp.tsx
 // Root Unified Chat Shell — Live Backend & Socket Integration (Zustand)
-// Resizable Panels via react-resizable-panels
+// Resizable Panels via react-resizable-panels with Collapsible Rail
 // ============================================
 
 import React, { useEffect, useState } from 'react';
@@ -40,7 +40,9 @@ export const ChatApp: React.FC = () => {
     detailsOpen,
     setDetailsOpen,
     mobileThread,
-    setMobileThread
+    setMobileThread,
+    railCollapsed,
+    toggleRailCollapsed,
   } = useUIStore();
 
   // Load real rooms from backend on mount
@@ -57,13 +59,20 @@ export const ChatApp: React.FC = () => {
     <div className="flex h-dvh w-full overflow-hidden bg-background text-foreground select-none">
       {/* ── DESKTOP & TABLET LAYOUT (>= md) ── */}
       <div className="hidden md:flex w-full h-full">
-        {/* Column 1: Navigation Rail (Fixed) */}
-        <PlatformRail
-          active={category}
-          onSelect={setCategory}
-          getUnreadCount={getUnreadCount}
-          onLogout={logout}
-        />
+        {/* Column 1: Navigation Rail (Fixed / Collapsible) */}
+        <div
+          className={`transition-[width,opacity] duration-200 ease-in-out shrink-0 overflow-hidden ${
+            railCollapsed ? 'w-0 opacity-0 pointer-events-none' : 'w-16 opacity-100'
+          }`}
+        >
+          <PlatformRail
+            active={category}
+            onSelect={setCategory}
+            getUnreadCount={getUnreadCount}
+            onLogout={logout}
+            onToggleCollapse={toggleRailCollapsed}
+          />
+        </div>
 
         {/* Resizable Section: ConversationList | MessageThread */}
         <div className="flex-1 h-full min-w-0 flex">
@@ -84,6 +93,8 @@ export const ChatApp: React.FC = () => {
             >
               <ConversationList
                 isCollapsed={isCollapsed}
+                railCollapsed={railCollapsed}
+                onToggleRailCollapse={toggleRailCollapsed}
                 category={category}
                 rooms={rooms}
                 activeRoomId={activeRoom?.id || ''}

@@ -1,7 +1,7 @@
 // ============================================
 // client/src/components/PlatformRail.tsx
 // Column 1: Navigation Rail — w-16 fixed vertical nav (80% compact ratio)
-// Workspace & Chat Categories
+// Workspace & Chat Categories with Collapse Toggle
 // ============================================
 
 import React from 'react';
@@ -13,6 +13,7 @@ import {
   Archive,
   Settings,
   LogOut,
+  PanelLeftClose,
 } from 'lucide-react';
 import type { CategoryId } from '../lib/chatData';
 
@@ -21,6 +22,7 @@ interface PlatformRailProps {
   onSelect: (c: CategoryId) => void;
   getUnreadCount: (c: CategoryId) => number;
   onLogout?: () => void;
+  onToggleCollapse?: () => void;
 }
 
 const NAV_ITEMS: { id: CategoryId; Icon: React.FC<React.SVGProps<SVGSVGElement>>; label: string }[] = [
@@ -40,6 +42,7 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
   onSelect,
   getUnreadCount,
   onLogout,
+  onToggleCollapse,
 }) => {
   return (
     <nav
@@ -92,6 +95,18 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
 
       {/* Bottom Actions */}
       <div className="flex flex-col items-center gap-2 pb-3 pt-2 border-t border-border w-full shrink-0">
+        {/* Collapse Button */}
+        {onToggleCollapse && (
+          <button
+            aria-label="Collapse Navigation Rail"
+            title="Collapse Navigation Rail"
+            onClick={onToggleCollapse}
+            className="w-11 h-11 border border-transparent text-muted-foreground hover:border-foreground hover:bg-foreground hover:text-background flex items-center justify-center transition-colors"
+          >
+            <PanelLeftClose className="w-4.5 h-4.5" />
+          </button>
+        )}
+
         <button
           aria-label="Settings"
           title="Settings"
