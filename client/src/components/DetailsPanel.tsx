@@ -1,6 +1,6 @@
 // ============================================
 // client/src/components/DetailsPanel.tsx
-// Column 4: Details Panel — Room Overview & Security (80% compact ratio)
+// Details Panel — Top Popup inside MessageThread (Room Overview & Security)
 // ============================================
 
 import React from 'react';
@@ -26,14 +26,12 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
   const tag = isChannel ? (room.name === 'General' ? 'AP' : 'CH') : 'DM';
 
   return (
-    <aside
-      className="flex flex-col w-72 lg:w-80 shrink-0 border-l border-border bg-card h-full select-none overflow-y-auto"
-      aria-label="Details Panel"
-    >
-      {/* Header */}
-      <div className="h-14 px-4 border-b border-border flex items-center justify-between shrink-0">
-        <span className="font-mono text-xs font-bold tracking-wider text-foreground uppercase">
-          Details
+    <div className="border-b border-border bg-card p-3 sm:p-4 shrink-0 select-none animate-slide-down w-full">
+      {/* Top Bar: Title & Close Button */}
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/60">
+        <span className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 bg-foreground inline-block" />
+          Channel Details & Security
         </span>
         <button
           onClick={onClose}
@@ -45,58 +43,54 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
         </button>
       </div>
 
-      {/* Main Content */}
-      <div className="p-4 space-y-5 flex-1">
-        {/* Profile Header */}
-        <div className="text-center">
-          <div className="w-16 h-16 border border-border bg-background text-foreground font-mono font-bold text-lg flex items-center justify-center mx-auto mb-3">
+      {/* Main Content: Responsive layout (Column on tiny screens, Row on normal screens) */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        {/* Profile Info */}
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-11 h-11 border border-border bg-background text-foreground font-mono font-bold text-sm flex items-center justify-center shrink-0">
             {initials}
           </div>
-          <h3 className="font-bold text-base text-foreground truncate">
-            {isChannel ? `#${room.name}` : room.name}
-          </h3>
-          <p className="font-mono text-xs text-muted-foreground mt-0.5">
-            {handle}
-          </p>
-
-          <div className="flex items-center justify-center gap-2 mt-3">
-            <span className="font-mono text-[10px] font-bold tracking-wider px-2 py-0.5 border border-border bg-background text-foreground">
-              {tag} · Apex
-            </span>
-            <span className="font-mono text-[10px] font-bold tracking-wider px-2 py-0.5 border border-border bg-foreground text-background">
-              Online
-            </span>
+          <div className="min-w-0">
+            <h3 className="font-bold text-sm text-foreground truncate">
+              {isChannel ? `#${room.name}` : room.name}
+            </h3>
+            <p className="font-mono text-xs text-muted-foreground truncate">
+              {handle}
+            </p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-mono text-[9px] font-bold tracking-wider px-1.5 py-0.5 border border-border bg-background text-foreground">
+                {tag} · Apex
+              </span>
+              <span className="font-mono text-[9px] font-bold tracking-wider px-1.5 py-0.5 border border-border bg-foreground text-background">
+                Online
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Security & Protocol Section */}
-        <div className="space-y-2 pt-2 border-t border-border">
-          <h4 className="font-mono text-[10px] font-bold tracking-wider text-muted-foreground uppercase">
-            Security & Encryption
-          </h4>
-          <div className="p-3 border border-border bg-background space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-muted-foreground flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-foreground shrink-0" /> E2EE (libsodium)
-              </span>
-              <span className="font-bold text-foreground">Active</span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-muted-foreground flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-foreground shrink-0" /> Signal Protocol
-              </span>
-              <span className="text-foreground font-bold">Verified</span>
-            </div>
-            <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-muted-foreground flex items-center gap-1.5">
-                <UserCheck className="w-3.5 h-3.5 text-foreground shrink-0" /> Key Fingerprint
-              </span>
-              <span className="text-foreground font-bold">Matched</span>
-            </div>
+        {/* Security & Protocol Badges */}
+        <div className="w-full md:w-auto p-2.5 border border-border bg-background space-y-1.5">
+          <div className="flex items-center justify-between gap-4 text-xs font-mono">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Lock className="w-3.5 h-3.5 text-foreground shrink-0" /> E2EE (libsodium)
+            </span>
+            <span className="font-bold text-foreground">Active</span>
+          </div>
+          <div className="flex items-center justify-between gap-4 text-xs font-mono">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-foreground shrink-0" /> Signal Protocol
+            </span>
+            <span className="text-foreground font-bold">Verified</span>
+          </div>
+          <div className="flex items-center justify-between gap-4 text-xs font-mono">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <UserCheck className="w-3.5 h-3.5 text-foreground shrink-0" /> Key Fingerprint
+            </span>
+            <span className="text-foreground font-bold">Matched</span>
           </div>
         </div>
       </div>
-    </aside>
+    </div>
   );
 };
 

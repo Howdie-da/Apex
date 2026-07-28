@@ -1,17 +1,18 @@
 // ============================================
 // client/src/components/MessageThread.tsx
 // Column 3: Message Thread — Real-time Socket.io & REST (80% compact ratio)
+// Includes Top DetailsPanel Popup
 // ============================================
 
 import React, { useState, useRef, useEffect } from 'react';
 import {
   ArrowLeft,
-  PanelRight,
   Hash,
   SendHorizontal,
 } from 'lucide-react';
 import type { Message, Room } from '../types/index';
 import type { User } from '../types/index';
+import DetailsPanel from './DetailsPanel';
 
 interface MessageThreadProps {
   room: Room | null;
@@ -67,7 +68,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
   if (!room) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-background p-6">
+      <div className="flex-1 flex items-center justify-center bg-background p-6 select-none">
         <span className="font-mono text-xs tracking-wider text-muted-foreground">
           Select a room
         </span>
@@ -138,40 +139,40 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             </button>
           )}
 
-          {/* Avatar Tile */}
-          <div className="w-8 h-8 font-mono text-xs font-bold border border-border bg-card text-foreground flex items-center justify-center shrink-0">
-            {initials}
-          </div>
-
-          {/* Info Column */}
-          <div className="flex flex-col min-w-0">
-            <h1 className="font-bold text-sm leading-tight truncate text-foreground">
-              {displayName}
-            </h1>
-            <div className="font-mono text-[10px] tracking-wider text-muted-foreground flex items-center gap-1.5 mt-0.5">
-              <span className="w-1.5 h-1.5 shrink-0 bg-foreground" />
-              <span>Apex Net / Online</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Right Header Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Clickable Channel Name & Avatar Header */}
           <button
-            aria-label="Toggle Details Panel"
-            title="Details Panel"
+            type="button"
             onClick={onToggleDetails}
-            aria-pressed={detailsOpen}
-            className={`w-8 h-8 border flex items-center justify-center transition-colors ${
-              detailsOpen
-                ? 'bg-foreground text-background border-foreground'
-                : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
-            }`}
+            className="flex items-center gap-3 min-w-0 text-left hover:opacity-85 transition-opacity focus:outline-none group cursor-pointer"
+            title="Toggle Channel Details"
+            aria-label="Toggle Channel Details"
           >
-            <PanelRight className="w-3.5 h-3.5" />
+            {/* Avatar Tile */}
+            <div className="w-8 h-8 font-mono text-xs font-bold border border-border bg-card text-foreground flex items-center justify-center shrink-0 group-hover:border-foreground transition-colors">
+              {initials}
+            </div>
+
+            {/* Info Column */}
+            <div className="flex flex-col min-w-0">
+              <h1 className="font-bold text-sm leading-tight truncate text-foreground flex items-center gap-1.5">
+                <span>{displayName}</span>
+                <span className="text-[9px] font-mono text-muted-foreground group-hover:text-foreground transition-colors">
+                  {detailsOpen ? '▲' : '▼'}
+                </span>
+              </h1>
+              <div className="font-mono text-[10px] tracking-wider text-muted-foreground flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 shrink-0 bg-foreground" />
+                <span>Apex Net / Online</span>
+              </div>
+            </div>
           </button>
         </div>
       </header>
+
+      {/* Top Details Panel Popup (Pops down from top of MessageThread) */}
+      {detailsOpen && (
+        <DetailsPanel room={room} onClose={onToggleDetails} />
+      )}
 
       {/* Scrollable Thread Body */}
       <div className="flex-1 overflow-y-auto p-3.5 md:p-4 space-y-3.5">

@@ -4,7 +4,7 @@
 // Resizable Panels via react-resizable-panels
 // ============================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Group, Panel, Separator } from 'react-resizable-panels';
 import type { CategoryId } from '../lib/chatData';
 import { useAuthStore } from '../store/useAuthStore';
@@ -14,10 +14,10 @@ import { useUIStore } from '../store/useUIStore';
 import PlatformRail from './PlatformRail';
 import ConversationList from './ConversationList';
 import MessageThread from './MessageThread';
-import DetailsPanel from './DetailsPanel';
 
 export const ChatApp: React.FC = () => {
   const { user, logout } = useAuthStore();
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(false);
   
   const { 
     rooms, 
@@ -66,12 +66,24 @@ export const ChatApp: React.FC = () => {
         />
 
         {/* Resizable Section: ConversationList | MessageThread */}
-        {/* // HERE: This container div defines the total width (x) used for Panel percentage calculations */}
         <div className="flex-1 h-full min-w-0 flex">
           <Group orientation="horizontal" className="flex-1 h-full w-full">
-            {/* Panel 1: Conversation List */}
-            <Panel defaultSize="20" minSize="10" maxSize="50">
+            {/* Panel 1: Conversation List — Collapsible when resized < minSize */}
+            <Panel 
+              defaultSize="20" 
+              minSize="15" 
+              maxSize="50"
+              collapsible={true}
+              collapsedSize="5"
+              onResize={(size) => {
+                const collapsed = size.inPixels < 140 || size.asPercentage <= 7;
+                if (collapsed !== isCollapsed) {
+                  setIsCollapsed(collapsed);
+                }
+              }}
+            >
               <ConversationList
+                isCollapsed={isCollapsed}
                 category={category}
                 rooms={rooms}
                 activeRoomId={activeRoom?.id || ''}
@@ -88,7 +100,7 @@ export const ChatApp: React.FC = () => {
             <Separator className="w-1.5 bg-border hover:bg-foreground active:bg-foreground transition-colors cursor-col-resize select-none shrink-0" />
 
             {/* Panel 2: Message Thread */}
-            <Panel defaultSize="75" minSize="30">
+            <Panel defaultSize="80" minSize="30">
               <MessageThread
                 room={activeRoom}
                 messages={messages}
@@ -103,14 +115,6 @@ export const ChatApp: React.FC = () => {
               />
             </Panel>
           </Group>
-
-          {/* Column 4: Fixed-width Details Panel */}
-          {detailsOpen && activeRoom && (
-            <DetailsPanel
-              room={activeRoom}
-              onClose={() => setDetailsOpen(false)}
-            />
-          )}
         </div>
       </div>
 
