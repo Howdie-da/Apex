@@ -57,12 +57,6 @@ export async function initDB(): Promise<void> {
       ALTER TABLE rooms ADD COLUMN IF NOT EXISTS last_activity_at TIMESTAMPTZ DEFAULT NOW();
     `);
 
-    // Create default "General" room if it doesn't exist
-    await client.query(`
-      INSERT INTO rooms (name, type)
-      SELECT 'General', 'group'
-      WHERE NOT EXISTS (SELECT 1 FROM rooms WHERE name = 'General');
-    `);
 
     // ROOM MEMBERS
     await client.query(`

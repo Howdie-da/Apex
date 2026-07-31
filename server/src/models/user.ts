@@ -90,6 +90,21 @@ export async function findByExactUsername(username: string, excludeUserId?: stri
 }
 
 /**
+ * Search users by username or display name (partial match).
+ */
+export async function searchUsers(query: string, excludeUserId?: string): Promise<User[]> {
+  const { rows } = await pool.query<UserRow>(
+    `SELECT * FROM users
+     WHERE (username ILIKE $1 OR display_name ILIKE $1)
+       AND ($2::uuid IS NULL OR id != $2)
+     ORDER BY is_online DESC, display_name ASC
+     LIMIT 20`,
+    [`%${query.trim()}%`, excludeUserId || null]
+  );
+  return rows.map(toUser);
+}
+
+/**
  * DM: Fetch all users for the user directory (excludes the requesting user).
  */
 export async function getAllUsers(excludeUserId?: string): Promise<User[]> {
@@ -102,3 +117,13 @@ export async function getAllUsers(excludeUserId?: string): Promise<User[]> {
   return rows.map(toUser);
 }
 
+/**
+ * Update display name for a user.
+ */
+export async function updateDisplayName(userId: string, newDisplayName: string): Promise<void> {
+  await pool.query(
+    'UPDATE users SET display_name = $1 WHERE id = $2',
+    [newDisplayName, userId]
+  );
+  log.info({ userId }, 'Display name updated');
+}

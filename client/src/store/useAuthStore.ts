@@ -20,6 +20,7 @@ interface AuthState {
   initializeAuth: () => Promise<void>;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, displayName: string, password: string) => Promise<void>;
+  updateDisplayName: (newName: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
@@ -136,6 +137,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  updateDisplayName: async (newName: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) return;
+    await fetchAPI('/users/me/display-name', {
+      method: 'PATCH',
+      body: JSON.stringify({ displayName: trimmed })
+    });
+    set((state) => ({
+      user: state.user ? { ...state.user, displayName: trimmed } : null
+    }));
   },
 
   logout: () => {

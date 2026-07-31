@@ -21,20 +21,6 @@ export function registerSocketHandlers(io: TypedServer): void {
         username: user.username,
       });
 
-      const { rows: generalRooms } = await pool.query(
-        "SELECT id FROM rooms WHERE name = 'General' LIMIT 1"
-      );
-      if (generalRooms.length > 0) {
-        const generalRoomId = generalRooms[0].id;
-        socket.join(generalRoomId);
-
-        await pool.query(
-          `INSERT INTO room_members (room_id, user_id)
-           VALUES ($1, $2)
-           ON CONFLICT DO NOTHING`,
-          [generalRoomId, user.userId]
-        );
-      }
 
       // Join all rooms the user is a member of
       const { rows: userRooms } = await pool.query(

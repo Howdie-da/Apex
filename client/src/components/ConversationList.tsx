@@ -6,12 +6,13 @@
 // ============================================
 
 import React, { useState } from 'react';
-import { Search, PanelLeftOpen, SquarePen } from 'lucide-react';
+import { Search, PanelLeftOpen, SquarePen, Users } from 'lucide-react';
 import type { Room } from '../types/index';
 import type { User } from '../types/index';
 import type { CategoryId } from '../lib/chatData';
 import { CATEGORY_NAMES } from '../lib/chatData';
 import NewDMModal from './NewDMModal';
+import CreateGroupModal from './CreateGroupModal';
 
 interface ConversationListProps {
   category: CategoryId;
@@ -39,12 +40,13 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   currentUser,
 }) => {
   const [dmModalOpen, setDMModalOpen] = useState(false);
-  const categoryTitle = CATEGORY_NAMES[category] || 'Channels';
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
+  const categoryTitle = CATEGORY_NAMES[category] || 'Groups';
 
   // Filter rooms
   const filteredRooms = rooms.filter((r) => {
     let matchCat = true;
-    if (category === 'channels') matchCat = r.type === 'group';
+    if (category === 'groups') matchCat = r.type === 'group';
     if (category === 'direct') matchCat = r.type === 'direct';
 
     const q = searchQuery.trim().toLowerCase();
@@ -80,12 +82,24 @@ export const ConversationList: React.FC<ConversationListProps> = ({
 
             <div className="flex items-center gap-1">
               {/* New DM button — only in 'direct' category, not collapsed */}
-              {!isCollapsed && (category === 'direct' || category === 'all') && currentUser && (
+              {!isCollapsed && category === 'direct' && currentUser && (
                 <button
                   onClick={() => setDMModalOpen(true)}
                   className="p-1.5 rounded-none border border-border/50 text-muted-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all shrink-0"
                   title="New Direct Message"
                   aria-label="New Direct Message"
+                >
+                  <SquarePen className="w-3.5 h-3.5" />
+                </button>
+              )}
+
+              {/* New Group button — only in 'groups' category, not collapsed */}
+              {!isCollapsed && category === 'groups' && currentUser && (
+                <button
+                  onClick={() => setGroupModalOpen(true)}
+                  className="p-1.5 rounded-none border border-border/50 text-muted-foreground hover:border-primary/50 hover:bg-primary/10 hover:text-primary transition-all shrink-0"
+                  title="Create Group"
+                  aria-label="Create Group"
                 >
                   <SquarePen className="w-3.5 h-3.5" />
                 </button>
@@ -118,7 +132,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
               <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
               <input
                 type="search"
-                placeholder="Search channels..."
+                placeholder={`Search ${categoryTitle.toLowerCase()}...`}
                 value={searchQuery}
                 onChange={(e) => onSearch(e.target.value)}
                 className="flex-1 bg-transparent text-xs font-mono focus:outline-none placeholder:text-muted-foreground placeholder:tracking-wider text-foreground"
@@ -148,10 +162,32 @@ export const ConversationList: React.FC<ConversationListProps> = ({
             </div>
           )}
 
-          {filteredRooms.length === 0 && (searchQuery || category !== 'direct') ? (
-            <div className="p-2 text-center text-muted-foreground font-mono text-xs tracking-wider">
-              {isCollapsed ? '—' : 'No channels found'}
+          {/* Empty state for Groups — create prompt */}
+          {!isCollapsed && category === 'groups' && filteredRooms.length === 0 && !searchQuery && (
+            <div className="flex flex-col items-center justify-center py-8 px-3 text-center gap-3">
+              <p className="font-mono text-xs text-muted-foreground tracking-wider">
+                No groups yet.
+              </p>
+              {currentUser && (
+                <button
+                  onClick={() => setGroupModalOpen(true)}
+                  className="font-mono text-[10px] tracking-widest px-3 py-1.5 border border-border text-muted-foreground hover:border-foreground hover:text-foreground transition-colors flex items-center gap-1.5"
+                >
+                  <Users className="w-3 h-3" />
+                  Create a Group
+                </button>
+              )}
             </div>
+          )}
+
+          {filteredRooms.length === 0 && (searchQuery || (category !== 'direct' && category !== 'groups')) ? (
+            !isCollapsed ? (
+              <div className="py-6 text-center select-none">
+                <p className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">
+                  No rooms found
+                </p>
+              </div>
+            ) : null
           ) : (
             filteredRooms.map((r) => {
               const isActive = activeRoomId === r.id;
@@ -171,12 +207,12 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                   key={r.id}
                   onClick={() => onSelectRoom(r.id)}
                   title={r.name}
-                  className={`w-full text-left transition-all block select-none rounded-none overflow-hidden ${
+                  className={`w-full text-left transition-all block select-none rounded-none overflow-hidden border-b-1 ${
                     isCollapsed ? 'p-1.5' : 'p-3'
                   } ${
                     isActive
-                      ? 'bg-primary/15 text-foreground shadow-sm'
-                      : 'bg-transparent text-muted-foreground hover:bg-card hover:text-foreground'
+                      ? 'bg-primary/15 text-foreground shadow-sm border-zinc-100'
+                      : 'bg-transparent text-muted-foreground hover:bg-card hover:text-foreground border-zinc-400/30'
                   }`}
                   aria-pressed={isActive}
                 >
@@ -201,7 +237,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                               <span className="w-2 h-2 rounded-none bg-foreground shrink-0" title="Online" />
                             )}
                           </span>
-                          {r.type === 'direct' && (r.unreadCount || 0) > 0 && (
+                          {(r.unreadCount || 0) > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-none bg-foreground px-1.5 text-[10px] font-bold text-background font-mono shrink-0">
                               {r.unreadCount}
                             </span>
@@ -220,8 +256,16 @@ export const ConversationList: React.FC<ConversationListProps> = ({
       {/* New DM Modal */}
       {dmModalOpen && currentUser && (
         <NewDMModal
-          currentUserId={currentUser.id}
           onClose={() => setDMModalOpen(false)}
+          onRoomReady={(room) => onSelectRoom(room.id)}
+        />
+      )}
+
+      {/* Create Group Modal */}
+      {groupModalOpen && currentUser && (
+        <CreateGroupModal
+          currentUserId={currentUser.id}
+          onClose={() => setGroupModalOpen(false)}
           onRoomReady={(room) => onSelectRoom(room.id)}
         />
       )}

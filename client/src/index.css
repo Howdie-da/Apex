@@ -77,10 +77,10 @@
 }
 
 /* ── Mobile slide animation ── */
-@keyframes slideInLeft {
-  from { transform: translateX(-100%); }
+@keyframes slideInRight {
+  from { transform: translateX(100%); }
   to   { transform: translateX(0); }
 }
 .animate-slide-in {
-  animation: slideInLeft 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

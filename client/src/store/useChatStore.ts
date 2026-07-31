@@ -8,7 +8,7 @@ import { create } from 'zustand';
 import type { Room, Message, Reaction } from '../types/index';
 import { fetchAPI } from '../lib/api';
 import { socket } from '../config/socket';
-import { deriveSharedKey, decryptMessage } from '../lib/crypto';
+import { deriveSharedKey, decryptMessage, encryptMessage } from '../lib/crypto';
 import { useAuthStore } from './useAuthStore';
 
 // Helper to extract the other user's ID from a DM room name (format: "uuid1:uuid2")
@@ -51,6 +51,8 @@ interface ChatState {
   loadRooms: () => Promise<void>;
   addRoom: (room: Room) => void;
   updateUserStatus: (userId: string, isOnline: boolean) => void;
+  updateUserDisplayName: (userId: string, newDisplayName: string) => void;
+  updateRoomName: (roomId: string, newName: string) => void;
   loadRoomMessages: (roomId: string) => Promise<void>;
   loadMoreHistory: () => Promise<void>;
 
@@ -107,8 +109,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       const roomList = await fetchAPI<Room[]>('/rooms');
       set({ rooms: roomList });
 
-      // We no longer automatically select #General or the first room,
-      // leaving it empty until the user explicitly selects a chat.
     } catch (err) {
       console.error('Failed to fetch rooms:', err);
     }
@@ -129,6 +129,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
         }
         return r;
       }),
+    }));
+  },
+
+  updateUserDisplayName: (userId, newDisplayName) => {
+    set((state) => ({
+      rooms: state.rooms.map((r) => {
+        if (r.dmUser && r.dmUser.id === userId) {
+          return { ...r, dmUser: { ...r.dmUser, displayName: newDisplayName } };
+        }
+        return r;
+      }),
+    }));
+  },
+
+  updateRoomName: (roomId, newName) => {
+    set((state) => ({
+      rooms: state.rooms.map((r) => r.id === roomId ? { ...r, name: newName } : r)
     }));
   },
 
@@ -263,8 +280,22 @@ export const useChatStore = create<ChatState>((set, get) => ({
     let finalContent = content.trim();
     let finalType: Message['type'] = type;
 
-    // E2EE: Disabled per user request. New messages will be sent as plain text.
-    // This resolves the fragility of key rotation in dev environments while keeping existing messages encrypted.
+    const room = get().rooms.find(r => r.id === roomId);
+    if (room?.isEncrypted) {
+      const authUser = useAuthStore.getState().user;
+      const otherUserId = room.type === 'direct' ? getOtherUserIdFromRoomName(room.name, authUser?.id || '') : null;
+      if (otherUserId) {
+        try {
+          const sharedKey = await get()._getSharedKey(otherUserId);
+          if (sharedKey) {
+            finalContent = await encryptMessage(finalContent, sharedKey);
+            finalType = 'encrypted';
+          }
+        } catch (err) {
+          console.error('[E2EE] Failed to encrypt outgoing message', err);
+        }
+      }
+    }
 
     socket.emit('chat:message', { roomId, content: finalContent, type: finalType, replyTo });
     set({ replyTo: null });

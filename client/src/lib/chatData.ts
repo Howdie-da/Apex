@@ -5,7 +5,7 @@
 
 export type CategoryId =
   | 'all'
-  | 'channels'
+  | 'groups'
   | 'direct'
   | 'starred'
   | 'archive';
@@ -14,7 +14,7 @@ export type TagCode = 'CH' | 'DM' | 'SEC' | 'AP';
 
 export const CATEGORY_NAMES: Record<CategoryId, string> = {
   all: 'All Inboxes',
-  channels: 'Channels',
+  groups: 'Groups',
   direct: 'Direct Messages',
   starred: 'Starred & Pinned',
   archive: 'Archived Chats',

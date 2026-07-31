@@ -37,7 +37,6 @@ router.post('/register', authLimiter, async (req: Request, res: Response): Promi
   // 3. Check if Password is correct, if yes, hash it
   // 4. Create user
   // 5. Generate and Store tokens
-  // 6. Auto-Join general channel
 
   try {
     const { username, displayName, password } = req.body;
@@ -71,13 +70,6 @@ router.post('/register', authLimiter, async (req: Request, res: Response): Promi
     const accessToken = generateAccessToken(jwtPayload);
     const refreshToken = generateRefreshToken();
     await storeRefreshToken(user.id, refreshToken);
-
-    await pool.query(
-      `INSERT INTO room_members (room_id, user_id)
-       SELECT id, $1 FROM rooms WHERE name = 'General'
-       ON CONFLICT DO NOTHING`,
-      [user.id]
-    );
 
     log.info({ userId: user.id, username }, 'User registered');
 

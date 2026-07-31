@@ -205,5 +205,218 @@ router.post('/:roomId/read', authMiddleware, async (req: Request, res: Response)
   }
 });
 
+/**
+ * POST /api/rooms/group
+ * Create a new group group with multiple users.
+ * Body: { name: string, targetUserIds: string[] }
+ */
+router.post('/group', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const callerId = (req as any).user?.userId as string;
+    const { name, targetUserIds } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      res.status(400).json({ error: 'Valid group name is required.' });
+      return;
+    }
+
+    if (!Array.isArray(targetUserIds) || targetUserIds.length < 1) {
+      res.status(400).json({ error: 'At least one target user must be specified.' });
+      return;
+    }
+
+    // Create new group room
+    const { rows: created } = await pool.query<RoomRow>(
+      `INSERT INTO rooms (name, type, created_by, is_encrypted)
+       VALUES ($1, 'group', $2, false)
+       RETURNING *`,
+      [name.trim(), callerId]
+    );
+
+    const newRoom = created[0];
+    const allMembers = Array.from(new Set([callerId, ...targetUserIds]));
+
+    // Add all users as members
+    const insertValues = allMembers.map((_, idx) => `($1, $${idx + 2})`).join(', ');
+    await pool.query(
+      `INSERT INTO room_members (room_id, user_id)
+       VALUES ${insertValues}
+       ON CONFLICT DO NOTHING`,
+      [newRoom.id, ...allMembers]
+    );
+
+    // Emit the new room via socket to all members
+    const io = req.app.get('io');
+    if (io) {
+      allMembers.forEach(memberId => {
+        io.to(memberId).emit('room:created', toRoom(newRoom));
+      });
+    }
+
+    log.info({ roomId: newRoom.id, callerId, allMembers }, 'Group room created');
+    res.status(201).json(toRoom(newRoom));
+  } catch (err) {
+    log.error({ err }, 'Failed to create group room');
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+/**
+ * POST /api/rooms/:roomId/members
+ * Add members to an existing group.
+ * Body: { targetUserIds: string[] }
+ */
+router.post('/:roomId/members', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const callerId = (req as any).user?.userId as string;
+    const roomId = req.params.roomId;
+    const { targetUserIds } = req.body;
+
+    if (!Array.isArray(targetUserIds) || targetUserIds.length === 0) {
+      res.status(400).json({ error: 'targetUserIds array is required.' });
+      return;
+    }
+
+    // Verify room exists and is a group
+    const { rows: rooms } = await pool.query<RoomRow>(
+      'SELECT * FROM rooms WHERE id = $1 AND type = $2',
+      [roomId, 'group']
+    );
+    if (rooms.length === 0) {
+      res.status(404).json({ error: 'Group not found' });
+      return;
+    }
+
+    // Check if caller is a member
+    const { rows: mems } = await pool.query(
+      'SELECT 1 FROM room_members WHERE room_id = $1 AND user_id = $2',
+      [roomId, callerId]
+    );
+    if (mems.length === 0) {
+      res.status(403).json({ error: 'Not a member of this group' });
+      return;
+    }
+
+    // Add new members
+    const insertValues = targetUserIds.map((_, idx) => `($1, $${idx + 2})`).join(', ');
+    await pool.query(
+      `INSERT INTO room_members (room_id, user_id)
+       VALUES ${insertValues}
+       ON CONFLICT DO NOTHING`,
+      [roomId, ...targetUserIds]
+    );
+
+    // Let the new members know they were added so the room appears for them
+    const io = req.app.get('io');
+    if (io) {
+      targetUserIds.forEach(targetId => {
+        io.to(targetId).emit('room:created', toRoom(rooms[0]));
+      });
+      // Optionally notify the room that members were added (not strictly required for UI right now)
+    }
+
+    res.json({ success: true, added: targetUserIds });
+  } catch (err) {
+    log.error({ err, roomId: req.params.roomId }, 'Failed to add members');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/rooms/:roomId/members
+ * Get all members of a room.
+ */
+router.get('/:roomId/members', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const callerId = (req as any).user?.userId as string;
+    const roomId = req.params.roomId;
+
+    // Check if caller is a member
+    const { rows: mems } = await pool.query(
+      'SELECT 1 FROM room_members WHERE room_id = $1 AND user_id = $2',
+      [roomId, callerId]
+    );
+    if (mems.length === 0) {
+      res.status(403).json({ error: 'Not a member of this room' });
+      return;
+    }
+
+    const { rows: members } = await pool.query(
+      `SELECT u.id, u.username, u.display_name as "displayName", u.avatar_url as "avatarUrl", 
+              u.is_online as "isOnline", u.last_seen as "lastSeen", u.created_at as "createdAt"
+       FROM room_members rm
+       JOIN users u ON u.id = rm.user_id
+       WHERE rm.room_id = $1`,
+      [roomId]
+    );
+
+    res.json(members);
+  } catch (err) {
+    log.error({ err, roomId: req.params.roomId }, 'Failed to fetch members');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * PATCH /api/rooms/:roomId/name
+ * Update the name of a group.
+ * Body: { name: string }
+ */
+router.patch('/:roomId/name', authMiddleware, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const callerId = (req as any).user?.userId as string;
+    const roomId = req.params.roomId;
+    const { name } = req.body;
+
+    if (!name || typeof name !== 'string' || name.trim() === '') {
+      res.status(400).json({ error: 'Valid group name is required.' });
+      return;
+    }
+
+    // Verify room exists and is a group
+    const { rows: rooms } = await pool.query<RoomRow>(
+      'SELECT * FROM rooms WHERE id = $1 AND type = $2',
+      [roomId, 'group']
+    );
+    if (rooms.length === 0) {
+      res.status(404).json({ error: 'Group not found' });
+      return;
+    }
+
+    // Check if caller is a member
+    const { rows: mems } = await pool.query(
+      'SELECT 1 FROM room_members WHERE room_id = $1 AND user_id = $2',
+      [roomId, callerId]
+    );
+    if (mems.length === 0) {
+      res.status(403).json({ error: 'Not a member of this group' });
+      return;
+    }
+
+    const trimmedName = name.trim();
+
+    // Update the room name
+    await pool.query(
+      'UPDATE rooms SET name = $1 WHERE id = $2',
+      [trimmedName, roomId]
+    );
+
+    // Emit the new room name via socket to all room members
+    const io = req.app.get('io');
+    if (io) {
+      io.to(roomId).emit('room:name-changed', {
+        roomId,
+        newName: trimmedName
+      });
+    }
+
+    log.info({ roomId, callerId, newName: trimmedName }, 'Group name updated');
+    res.json({ success: true });
+  } catch (err) {
+    log.error({ err, roomId: req.params.roomId }, 'Failed to update group name');
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;
 export { router as roomsRouter };

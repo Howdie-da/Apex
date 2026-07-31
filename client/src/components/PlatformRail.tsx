@@ -7,7 +7,7 @@
 import React from 'react';
 import {
   MessagesSquare,
-  Hash,
+  User,
   Users,
   Star,
   Archive,
@@ -28,8 +28,8 @@ interface PlatformRailProps {
 
 const NAV_ITEMS: { id: CategoryId; Icon: React.FC<React.SVGProps<SVGSVGElement>>; label: string }[] = [
   { id: 'all',      Icon: MessagesSquare as React.FC<React.SVGProps<SVGSVGElement>>, label: 'All Inboxes' },
-  { id: 'channels', Icon: Hash as React.FC<React.SVGProps<SVGSVGElement>>,           label: 'Channels' },
-  { id: 'direct',   Icon: Users as React.FC<React.SVGProps<SVGSVGElement>>,          label: 'Direct Messages' },
+  { id: 'groups',   Icon: Users as React.FC<React.SVGProps<SVGSVGElement>>,          label: 'Groups' },
+  { id: 'direct',   Icon: User as React.FC<React.SVGProps<SVGSVGElement>>,           label: 'Direct Messages' },
   { id: 'starred',  Icon: Star as React.FC<React.SVGProps<SVGSVGElement>>,           label: 'Starred' },
   { id: 'archive',  Icon: Archive as React.FC<React.SVGProps<SVGSVGElement>>,        label: 'Archived' },
 ];

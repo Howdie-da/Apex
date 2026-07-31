@@ -11,7 +11,7 @@ Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, y
 - **⚡ Real-Time Messaging**: Instant WebSocket communication powered by Socket.io v4 with fallback support.
 - **🐻 Centralized State Management**: Powered by **Zustand** for decoupled socket event listeners, zero-overhead re-renders, and persistent UI state.
 - **📐 Custom Layout**: Custom brutalist multi-column shell with responsive mobile views.
-- **💬 Channel & Room System**: Real-time room switching, typing indicators, member activity, and message history pagination.
+- **💬 Group & Room System**: Real-time room switching, typing indicators, member activity, and message history pagination.
 - **🔒 Secure Authentication**: Dual-token system featuring JWT access tokens, refresh token rotation, and bcrypt password hashing.
 
 ---
@@ -92,10 +92,10 @@ Apex/
 
 ## Roadmap
 
-- [x] **Phase 1**: Core Architecture, Real-Time Socket Messaging & Zustand Integration
-- [ ] **Phase 2**: E2EE (End-to-End Encryption) & Product Polish
-- [ ] **Phase 3**: Cross-Platform Desktop & Mobile Apps (Capacitor + Electron)
-- [ ] **Phase 4**: DevOps, Containerization & Self-Hostable Cloud Deployment
+- [x] **Phase 1** — Core Architecture & Real-Time Sync
+- [x] **Phase 2** — End-to-End Encryption (E2EE) Protocol
+- [ ] **Phase 3** — Zero-Knowledge S3 Media Pipeline (Client-Side AES-GCM)
+- [ ] **Phase 4** — Docker Containerization & Cloud Deployment
 
 ---
 

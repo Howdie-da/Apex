@@ -63,11 +63,10 @@ const ReactionBar: React.FC<ReactionBarProps> = ({ reactions, currentUserId, onT
         <button
           key={idx}
           onClick={() => onToggle(r.emoji, r.userIds.includes(currentUserId || ''))}
-          className={`flex items-center gap-1 px-2 py-0.5 text-xs transition-colors rounded-none shadow-sm border ${
-            r.userIds.includes(currentUserId || '')
+          className={`flex items-center gap-1 px-2 py-0.5 text-xs transition-colors rounded-none shadow-sm border ${r.userIds.includes(currentUserId || '')
               ? 'bg-zinc-800 text-zinc-100 border-zinc-700'
               : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200'
-          }`}
+            }`}
         >
           <span>{r.emoji}</span>
           <span className="font-mono text-[10px]">{r.count}</span>
@@ -120,9 +119,9 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
   const { replyTo, setReplyTo, reactToMessage, removeReaction, markRoomRead } = useChatStore();
 
-  // Mark room as read when viewing a DM with unread messages
+  // Mark room as read when viewing it with unread messages
   useEffect(() => {
-    if (room && room.type === 'direct' && (room.unreadCount || 0) > 0) {
+    if (room && (room.unreadCount || 0) > 0) {
       markRoomRead(room.id);
     }
   }, [room?.id, room?.unreadCount, markRoomRead, messages.length]);
@@ -152,14 +151,14 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 
   const isDirect = room.type === 'direct';
   const dmUser = room.dmUser;
-  
+
   const roomName = isDirect && dmUser
     ? (dmUser.displayName || dmUser.username)
     : room.name;
-    
+
   const displayName = isDirect ? roomName : `#${roomName}`;
-  const initials = isDirect && dmUser 
-    ? getAvatarInitials(dmUser.displayName || dmUser.username) 
+  const initials = isDirect && dmUser
+    ? getAvatarInitials(dmUser.displayName || dmUser.username)
     : getAvatarInitials(roomName);
 
   const handleSend = () => {
@@ -284,6 +283,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             </div>
           </button>
         </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          {/* Add Member button removed - now located inside DetailsPanel */}
+        </div>
       </header>
 
       {/* Top Details Panel Popup */}
@@ -343,22 +347,20 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                 <div className={`flex flex-col gap-1 group ${isMine ? 'items-end' : 'items-start'}`}>
                   {/* Message Bubble */}
                   <div
-                    className={`p-3 select-text relative flex flex-col min-w-20 gap-1.5 transition-colors shadow-sm rounded-none ${
-                      isMine
+                    className={`p-3 select-text relative flex flex-col min-w-20 gap-1.5 transition-colors shadow-sm rounded-none ${isMine
                         ? 'bg-zinc-200 text-zinc-900'
                         : 'bg-zinc-800 text-zinc-100 border border-zinc-700'
-                    }`}
+                      }`}
                   >
                     {/* Reply Preview (Moved Inside Bubble) */}
                     {msg.replyToMessage && (() => {
                       const isReplyMine = msg.replyToMessage.senderDisplayName === currentUser?.displayName;
                       return (
-                        <div className={`p-2 mb-1.5 flex flex-col min-w-0 max-w-full overflow-hidden border ${
-                          isReplyMine
+                        <div className={`p-2 mb-1.5 flex flex-col min-w-0 max-w-full overflow-hidden border ${isReplyMine
                             ? 'bg-zinc-200 text-zinc-900 border-zinc-300 selection:bg-zinc-900 selection:text-zinc-100'
                             : 'bg-zinc-800 text-zinc-100 border-zinc-700 selection:bg-zinc-200 selection:text-zinc-900'
-                        } ${isMine ? 'text-right' : 'text-left'}`}>
-                          <p className={`font-mono text-[10px] truncate ${isReplyMine ? 'text-zinc-900/80' : 'text-zinc-300'}`}>
+                          } ${isMine ? 'text-right' : 'text-left'}`}>
+                          <p className={`font-mono text-[12px] truncate ${isReplyMine ? 'text-zinc-900/80' : 'text-zinc-300'}`}>
                             {msg.replyToMessage.content.length > 15 ? msg.replyToMessage.content.slice(0, 15) + '...' : msg.replyToMessage.content}
                           </p>
                         </div>
@@ -369,11 +371,10 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                       {/* Sender Name Header */}
                       {room?.type !== 'direct' && (
                         <div
-                          className={`font-mono text-[11px] font-bold tracking-wider pb-1 flex items-center justify-between gap-3 border-b ${
-                            isMine
+                          className={`font-mono text-[11px] font-bold tracking-wider pb-1 flex items-center justify-between gap-3 border-b ${isMine
                               ? 'text-zinc-900/80 border-zinc-900/15'
                               : 'text-zinc-400 border-zinc-700'
-                          }`}
+                            }`}
                         >
                           <span>{isMine ? 'You' : senderName}</span>
                         </div>
@@ -385,9 +386,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                       </div>
 
                       {/* Timestamp & Read Receipt */}
-                      <div className={`self-end flex items-center gap-1 font-mono text-[10px] tracking-wider select-none ${
-                        isMine ? 'text-zinc-900/60' : 'text-zinc-400'
-                      }`}>
+                      <div className={`self-end flex items-center gap-1 font-mono text-[10px] tracking-wider select-none ${isMine ? 'text-zinc-900/60' : 'text-zinc-400'
+                        }`}>
                         {timeLabel}
                         {isMine && room?.type === 'direct' && (
                           <CheckCheck className={`w-3 h-3 ${msg.isRead ? 'text-zinc-900' : 'text-zinc-900/30'}`} />
@@ -456,8 +456,8 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
           </div>
         )}
 
-          {/* Empty space for scrolling down */}
-          <div ref={scrollRef} className="h-2" />
+        {/* Empty space for scrolling down */}
+        <div ref={scrollRef} className="h-2" />
       </div>
 
       {/* Reply Banner */}
@@ -501,16 +501,16 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
             disabled={isEmpty}
             aria-label="Send Message"
             title="Send Message"
-            className={`w-9 h-9 flex items-center justify-center shrink-0 transition-all ml-1 rounded-none mb-0.5 mr-0.5 ${
-              isEmpty
+            className={`w-9 h-9 flex items-center justify-center shrink-0 transition-all ml-1 rounded-none mb-0.5 mr-0.5 ${isEmpty
                 ? 'bg-muted text-muted-foreground/50 cursor-not-allowed'
                 : 'bg-primary text-primary-foreground shadow-md hover:opacity-90 cursor-pointer'
-            }`}
+              }`}
           >
             <SendHorizontal className="w-4 h-4" />
           </button>
         </div>
       </div>
+
     </div>
   );
 };

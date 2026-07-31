@@ -1,6 +1,7 @@
-import React from 'react';
-import { X, User, Hash, Clock, Fingerprint } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, User, Hash, Clock, Fingerprint, Edit2, Check } from 'lucide-react';
 import type { User as UserType } from '../types/index';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface UserInfoModalProps {
   user: UserType;
@@ -9,7 +10,32 @@ interface UserInfoModalProps {
 }
 
 const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(user.displayName);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const { updateDisplayName } = useAuthStore();
+
   if (!isOpen) return null;
+
+  const handleSave = async () => {
+    if (!editName.trim() || editName.trim() === user.displayName) {
+      setIsEditing(false);
+      setEditName(user.displayName);
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await updateDisplayName(editName);
+      setIsEditing(false);
+    } catch (err) {
+      console.error(err);
+      setEditName(user.displayName); // revert on error
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -56,13 +82,62 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
               <div className="mt-0.5 p-1.5 bg-sidebar border border-border text-muted-foreground">
                 <User className="w-4 h-4" />
               </div>
-              <div className="flex flex-col min-w-0">
+              <div className="flex flex-col min-w-0 flex-1">
                 <span className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase mb-0.5">
                   Display Name
                 </span>
-                <span className="text-sm font-medium text-foreground truncate">
-                  {user.displayName}
-                </span>
+                
+                {isEditing ? (
+                  <div className="flex items-center gap-2 mt-1">
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      className="flex-1 bg-background border border-primary/50 px-2 py-1 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 font-bold"
+                      autoFocus
+                      disabled={isSaving}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleSave();
+                        if (e.key === 'Escape') {
+                          setIsEditing(false);
+                          setEditName(user.displayName);
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={handleSave}
+                      disabled={isSaving}
+                      className="p-1 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50"
+                      title="Save"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsEditing(false);
+                        setEditName(user.displayName);
+                      }}
+                      disabled={isSaving}
+                      className="p-1 bg-sidebar border border-border text-muted-foreground hover:bg-card"
+                      title="Cancel"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between group">
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {user.displayName}
+                    </span>
+                    <button
+                      onClick={() => setIsEditing(true)}
+                      className="opacity-100 p-1 text-muted-foreground text-foreground transition-opacity"
+                      title="Edit Display Name"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 

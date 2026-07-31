@@ -37,7 +37,7 @@ const AuthGuard: React.FC<{ children: ReactNode; requireAuth: boolean }> = ({ ch
 
 const ApexMainApp: React.FC = () => {
   const { accessToken, logout } = useAuthStore();
-  const { addMessage, addTypingUser, removeTypingUser, setConnected, updateMessageReactions, addRoom, updateUserStatus, handleReadReceipt } = useChatStore();
+  const { addMessage, addTypingUser, removeTypingUser, setConnected, updateMessageReactions, addRoom, updateUserStatus, handleReadReceipt, updateUserDisplayName, updateRoomName } = useChatStore();
 
   // Socket Connection and Global Listeners
   useEffect(() => {
@@ -71,6 +71,8 @@ const ApexMainApp: React.FC = () => {
     const onUserOnline = (data: { userId: string; username: string }) => updateUserStatus(data.userId, true);
     const onUserOffline = (data: { userId: string; username: string }) => updateUserStatus(data.userId, false);
     const onReadReceipt = (data: { roomId: string; readerId: string; messageIds: string[] }) => handleReadReceipt(data.messageIds);
+    const onUserDisplayNameChanged = (data: { userId: string; newDisplayName: string }) => updateUserDisplayName(data.userId, data.newDisplayName);
+    const onRoomNameChanged = (data: { roomId: string; newName: string }) => updateRoomName(data.roomId, data.newName);
 
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
@@ -83,6 +85,8 @@ const ApexMainApp: React.FC = () => {
     socket.on('user:online', onUserOnline);
     socket.on('user:offline', onUserOffline);
     socket.on('chat:read-receipt', onReadReceipt);
+    socket.on('user:display-name-changed', onUserDisplayNameChanged);
+    socket.on('room:name-changed', onRoomNameChanged);
 
     return () => {
       socket.off('connect', onConnect);
@@ -96,8 +100,10 @@ const ApexMainApp: React.FC = () => {
       socket.off('user:online', onUserOnline);
       socket.off('user:offline', onUserOffline);
       socket.off('chat:read-receipt', onReadReceipt);
+      socket.off('user:display-name-changed', onUserDisplayNameChanged);
+      socket.off('room:name-changed', onRoomNameChanged);
     };
-  }, [accessToken, logout, addMessage, addTypingUser, removeTypingUser, setConnected, updateMessageReactions, addRoom, updateUserStatus, handleReadReceipt]);
+  }, [accessToken, logout, addMessage, addTypingUser, removeTypingUser, setConnected, updateMessageReactions, addRoom, updateUserStatus, handleReadReceipt, updateUserDisplayName, updateRoomName]);
 
   return (
     <BrowserRouter>
