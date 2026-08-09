@@ -3,7 +3,7 @@
 // Apex Root Entry Point — Real Auth & Socket Wiring (Zustand)
 // ============================================
 
-import React, { useEffect, ReactNode } from 'react';
+import React, { useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/useAuthStore';
 import { useChatStore } from './store/useChatStore';

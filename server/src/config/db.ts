@@ -34,6 +34,7 @@ export async function initDB(): Promise<void> {
         password_hash TEXT NOT NULL,
         avatar_url    TEXT,
         public_key    TEXT,
+        encrypted_private_key TEXT,
         is_online     BOOLEAN DEFAULT FALSE,
         last_seen     TIMESTAMPTZ DEFAULT NOW(),
         created_at    TIMESTAMPTZ DEFAULT NOW()
@@ -118,6 +119,11 @@ export async function initDB(): Promise<void> {
     // Add is_encrypted flag to rooms (Phase 2)
     await client.query(`
       ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_encrypted BOOLEAN DEFAULT FALSE;
+    `);
+
+    // Add encrypted_private_key column to users (Phase 2 E2EE Cloud Backup)
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS encrypted_private_key TEXT;
     `);
 
     // REFRESH TOKENS

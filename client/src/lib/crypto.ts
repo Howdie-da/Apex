@@ -127,6 +127,78 @@ export async function decryptMessage(payload: string, sharedKey: CryptoKey): Pro
   return new TextDecoder().decode(plainBuffer);
 }
 
+// ─── Password-Derived Cloud Backup (PBKDF2 + AES-GCM) ─────────────────────────
+
+async function derivePasswordWrappingKey(password: string, salt: Uint8Array): Promise<CryptoKey> {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: salt as any,
+      iterations: 100000,
+      hash: 'SHA-256',
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+/**
+ * Encrypt a PKCS8 Base64 private key with the user's password using PBKDF2 + AES-256-GCM.
+ * Returns `<salt_b64>:<iv_b64>:<ciphertext_b64>`.
+ */
+export async function encryptPrivateKeyWithPassword(privateKeyB64: string, password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const wrappingKey = await derivePasswordWrappingKey(password, salt);
+  
+  const encoded = new TextEncoder().encode(privateKeyB64);
+  const cipherBuffer = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    wrappingKey,
+    encoded
+  );
+  
+  return `${arrayBufferToBase64(salt.buffer)}:${arrayBufferToBase64(iv.buffer)}:${arrayBufferToBase64(cipherBuffer)}`;
+}
+
+/**
+ * Decrypt an encrypted cloud private key backup using the user's password.
+ * Returns the plaintext PKCS8 Base64 private key string, or null if decryption fails.
+ */
+export async function decryptPrivateKeyWithPassword(encryptedBlob: string, password: string): Promise<string | null> {
+  try {
+    const parts = encryptedBlob.split(':');
+    if (parts.length !== 3) return null;
+    const [saltB64, ivB64, ciphertextB64] = parts;
+
+    const salt = new Uint8Array(base64ToArrayBuffer(saltB64));
+    const iv = new Uint8Array(base64ToArrayBuffer(ivB64));
+    const ciphertext = base64ToArrayBuffer(ciphertextB64);
+
+    const wrappingKey = await derivePasswordWrappingKey(password, salt);
+    const plainBuffer = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      wrappingKey,
+      ciphertext
+    );
+
+    return new TextDecoder().decode(plainBuffer);
+  } catch (err) {
+    console.error('[E2EE] Failed to decrypt private key backup with password:', err);
+    return null;
+  }
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function arrayBufferToBase64(buffer: ArrayBuffer): string {

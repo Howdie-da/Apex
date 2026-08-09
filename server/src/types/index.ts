@@ -8,6 +8,7 @@ export interface User {
   displayName: string;
   avatarUrl: string | null;
   publicKey: string | null;
+  encryptedPrivateKey?: string | null;
   isOnline: boolean;
   lastSeen: Date;
   createdAt: Date;
@@ -20,6 +21,7 @@ export interface UserRow {
   password_hash: string;
   avatar_url: string | null;
   public_key: string | null;
+  encrypted_private_key?: string | null;
   is_online: boolean;
   last_seen: Date;
   created_at: Date;
@@ -123,6 +125,7 @@ export function toUser(row: UserRow): User {
     displayName: row.display_name,
     avatarUrl: row.avatar_url,
     publicKey: row.public_key,
+    encryptedPrivateKey: row.encrypted_private_key || null,
     isOnline: row.is_online,
     lastSeen: row.last_seen,
     createdAt: row.created_at,

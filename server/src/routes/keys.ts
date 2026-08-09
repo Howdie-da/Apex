@@ -13,13 +13,13 @@ const log = logger.child({ module: 'routes:keys' });
 
 /**
  * PUT /api/keys/public
- * Upload or replace the authenticated user's ECDH P-256 public key.
- * Body: { publicKey: string } — Base64-encoded SubjectPublicKeyInfo (SPKI) export
+ * Upload or replace the authenticated user's ECDH P-256 public key and optional encrypted private key backup.
+ * Body: { publicKey: string, encryptedPrivateKey?: string }
  */
 router.put('/public', authMiddleware, async (req: Request, res: Response): Promise<void> => {
   try {
     const userId = (req as any).user?.userId;
-    const { publicKey } = req.body;
+    const { publicKey, encryptedPrivateKey } = req.body;
 
     if (!publicKey || typeof publicKey !== 'string') {
       res.status(400).json({ error: 'publicKey (Base64 string) is required.' });
@@ -32,8 +32,13 @@ router.put('/public', authMiddleware, async (req: Request, res: Response): Promi
       return;
     }
 
-    await UserModel.savePublicKey(userId, publicKey);
-    log.debug({ userId }, 'Public key uploaded');
+    if (encryptedPrivateKey && typeof encryptedPrivateKey !== 'string') {
+      res.status(400).json({ error: 'encryptedPrivateKey must be a string if provided.' });
+      return;
+    }
+
+    await UserModel.saveE2EEKeys(userId, publicKey, encryptedPrivateKey || null);
+    log.debug({ userId, hasBackup: !!encryptedPrivateKey }, 'E2EE keys uploaded');
     res.json({ ok: true });
   } catch (err) {
     log.error({ err }, 'Failed to save public key');

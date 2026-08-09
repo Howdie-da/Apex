@@ -8,6 +8,7 @@ export interface User {
   displayName: string;
   avatarUrl: string | null;
   publicKey: string | null; // Phase 2: E2EE ECDH P-256 SPKI Base64
+  encryptedPrivateKey?: string | null; // Phase 2: Zero-knowledge PBKDF2 encrypted private key backup
   isOnline: boolean;
   lastSeen: string;
   createdAt: string;

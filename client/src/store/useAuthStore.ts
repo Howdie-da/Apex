@@ -7,7 +7,8 @@
 import { create } from 'zustand';
 import type { User, AuthResponse } from '../types/index';
 import { fetchAPI, APIError } from '../lib/api';
-import { ensureKeyPair, clearKeyPair } from '../lib/keyStore';
+import { loadKeyPair, saveKeyPair } from '../lib/keyStore';
+import { importPrivateKey, encryptPrivateKeyWithPassword, decryptPrivateKeyWithPassword, generateKeyPair } from '../lib/crypto';
 
 interface AuthState {
   user: User | null;
@@ -26,23 +27,69 @@ interface AuthState {
 }
 
 /**
- * Ensure the user has an ECDH key pair:
- * 1. Load from IndexedDB or generate a new one.
- * 2. If newly generated OR server doesn't have a public key yet, upload to server.
- * Returns the in-memory private CryptoKey.
+ * Ensure the user has an E2EE key pair:
+ * 1. Try loading existing local key pair from IndexedDB.
+ * 2. If missing (new browser/device) and password available, restore from encrypted cloud backup.
+ * 3. If no backup exists, generate a new key pair, save locally, encrypt with password, and upload to server.
  */
-async function setupE2EEKeys(user: User): Promise<CryptoKey> {
-  const { publicKeyB64, privateKey, isNew } = await ensureKeyPair(user.id);
+async function setupE2EEKeys(user: User, password?: string): Promise<CryptoKey | null> {
+  try {
+    const existing = await loadKeyPair(user.id);
+    if (existing) {
+      const privateKey = await importPrivateKey(existing.privateKeyB64);
+      
+      // Self-healing: If user logged in with a password but has no encrypted backup on server, upload it now
+      if (password && !user.encryptedPrivateKey) {
+        const encryptedPrivateKey = await encryptPrivateKeyWithPassword(existing.privateKeyB64, password);
+        await fetchAPI('/keys/public', {
+          method: 'PUT',
+          body: JSON.stringify({ publicKey: existing.publicKeyB64, encryptedPrivateKey }),
+        });
+        user.encryptedPrivateKey = encryptedPrivateKey;
+      }
+      
+      return privateKey;
+    }
 
-  // Upload if we just generated it, or if the server record is missing
-  if (isNew || !user.publicKey) {
+    // Local key missing: try restoring from cloud backup using login password
+    if (user.encryptedPrivateKey && password) {
+      const recoveredPrivateKeyB64 = await decryptPrivateKeyWithPassword(user.encryptedPrivateKey, password);
+      if (recoveredPrivateKeyB64) {
+        await saveKeyPair(user.id, user.publicKey || '', recoveredPrivateKeyB64);
+        const privateKey = await importPrivateKey(recoveredPrivateKeyB64);
+        console.log('[E2EE] Successfully restored encrypted private key from cloud backup');
+        return privateKey;
+      } else {
+        console.warn('[E2EE] Failed to decrypt cloud backup with password');
+      }
+    }
+
+    // If local key is missing during a silent session refresh, do NOT overwrite remote public key!
+    if (user.publicKey && !password) {
+      console.warn('[E2EE] Local private key not found during session refresh. Please re-login with username and password to restore key from cloud backup.');
+      return null;
+    }
+
+    // Otherwise, generate a brand new key pair (first time user or explicit setup)
+    const { exported, keyPair } = await generateKeyPair();
+    await saveKeyPair(user.id, exported.publicKeyB64, exported.privateKeyB64);
+
+    let encryptedPrivateKey: string | undefined = undefined;
+    if (password) {
+      encryptedPrivateKey = await encryptPrivateKeyWithPassword(exported.privateKeyB64, password);
+      user.encryptedPrivateKey = encryptedPrivateKey;
+    }
+
     await fetchAPI('/keys/public', {
       method: 'PUT',
-      body: JSON.stringify({ publicKey: publicKeyB64 }),
+      body: JSON.stringify({ publicKey: exported.publicKeyB64, encryptedPrivateKey }),
     });
-  }
 
-  return privateKey;
+    return keyPair.privateKey;
+  } catch (err) {
+    console.error('[E2EE] Failed to initialize encryption keys:', err);
+    return null;
+  }
 }
 
 let initPromise: Promise<void> | null = null;
@@ -76,7 +123,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         localStorage.setItem('accessToken', res.accessToken);
         localStorage.setItem('refreshToken', res.refreshToken);
 
-        // Restore E2EE keys from IndexedDB
+        // Restore E2EE keys from IndexedDB (or check cloud availability)
         const privateKey = await setupE2EEKeys(res.user);
         set({ accessToken: res.accessToken, user: res.user, privateKey });
       } catch (err) {
@@ -107,7 +154,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('accessToken', res.accessToken);
       localStorage.setItem('refreshToken', res.refreshToken);
 
-      const privateKey = await setupE2EEKeys(res.user);
+      const privateKey = await setupE2EEKeys(res.user, password);
       set({ accessToken: res.accessToken, user: res.user, privateKey });
     } catch (err: any) {
       set({ error: err instanceof APIError ? err.message : 'Login failed. Please try again.' });
@@ -129,7 +176,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       localStorage.setItem('accessToken', res.accessToken);
       localStorage.setItem('refreshToken', res.refreshToken);
 
-      const privateKey = await setupE2EEKeys(res.user);
+      const privateKey = await setupE2EEKeys(res.user, password);
       set({ accessToken: res.accessToken, user: res.user, privateKey });
     } catch (err: any) {
       set({ error: err instanceof APIError ? err.message : 'Registration failed. Please try again.' });
@@ -152,11 +199,9 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
-    const userId = useAuthStore.getState().user?.id;
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
-    // Clear private key from IndexedDB on explicit logout for security
-    if (userId) clearKeyPair(userId).catch(console.error);
+    // Note: Local private keys are preserved in IndexedDB across logouts and session expirations
     set({ accessToken: null, user: null, error: null, privateKey: null });
   },
 

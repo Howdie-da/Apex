@@ -17,6 +17,8 @@ export interface ServerToClientEvents {
   'chat:read-receipt': (data: { roomId: string; readerId: string; messageIds: string[] }) => void;
   'user:online': (data: { userId: string; username: string }) => void;
   'user:offline': (data: { userId: string; username: string }) => void;
+  'user:display-name-changed': (data: { userId: string; newDisplayName: string }) => void;
+  'room:name-changed': (data: { roomId: string; newName: string }) => void;
   'error': (data: { message: string }) => void;
 }
 

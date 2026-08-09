@@ -126,6 +126,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response): Promise<
         displayName: userRow.display_name,
         avatarUrl: userRow.avatar_url,
         publicKey: userRow.public_key,
+        encryptedPrivateKey: userRow.encrypted_private_key || null,
         isOnline: true,
         lastSeen: userRow.last_seen,
         createdAt: userRow.created_at,

@@ -47,22 +47,39 @@ export async function setOnlineStatus(id: string, isOnline: boolean): Promise<vo
   );
 }
 
+function toPublicUser(row: UserRow): User {
+  const user = toUser(row);
+  delete user.encryptedPrivateKey;
+  return user;
+}
+
 export async function getOnlineUsers(): Promise<User[]> {
   const { rows } = await pool.query<UserRow>(
     'SELECT * FROM users WHERE is_online = true ORDER BY username'
   );
-  return rows.map(toUser);
+  return rows.map(toPublicUser);
 }
 
 /**
- * Phase 2 E2EE: Store a user's ECDH P-256 public key (Base64 encoded).
+ * Phase 2 E2EE: Store a user's ECDH P-256 public key and optional encrypted private key backup.
  */
+export async function saveE2EEKeys(userId: string, publicKey: string, encryptedPrivateKey?: string | null): Promise<void> {
+  if (encryptedPrivateKey) {
+    await pool.query(
+      'UPDATE users SET public_key = $1, encrypted_private_key = $2 WHERE id = $3',
+      [publicKey, encryptedPrivateKey, userId]
+    );
+  } else {
+    await pool.query(
+      'UPDATE users SET public_key = $1 WHERE id = $2',
+      [publicKey, userId]
+    );
+  }
+  log.debug({ userId, hasBackup: !!encryptedPrivateKey }, 'E2EE keys saved');
+}
+
 export async function savePublicKey(userId: string, publicKey: string): Promise<void> {
-  await pool.query(
-    'UPDATE users SET public_key = $1 WHERE id = $2',
-    [publicKey, userId]
-  );
-  log.debug({ userId }, 'Public key saved');
+  return saveE2EEKeys(userId, publicKey);
 }
 
 /**
@@ -86,7 +103,7 @@ export async function findByExactUsername(username: string, excludeUserId?: stri
        AND ($2::uuid IS NULL OR id != $2)`,
     [username.trim(), excludeUserId || null]
   );
-  return rows[0] ? toUser(rows[0]) : null;
+  return rows[0] ? toPublicUser(rows[0]) : null;
 }
 
 /**
@@ -101,7 +118,7 @@ export async function searchUsers(query: string, excludeUserId?: string): Promis
      LIMIT 20`,
     [`%${query.trim()}%`, excludeUserId || null]
   );
-  return rows.map(toUser);
+  return rows.map(toPublicUser);
 }
 
 /**
@@ -114,7 +131,7 @@ export async function getAllUsers(excludeUserId?: string): Promise<User[]> {
      ORDER BY is_online DESC, username ASC`,
     [excludeUserId || null]
   );
-  return rows.map(toUser);
+  return rows.map(toPublicUser);
 }
 
 /**
