@@ -1,14 +1,10 @@
-// ============================================
-// client/src/types/index.ts
-// ============================================
-
 export interface User {
   id: string;
   username: string;
   displayName: string;
   avatarUrl: string | null;
-  publicKey: string | null; // Phase 2: E2EE ECDH P-256 SPKI Base64
-  encryptedPrivateKey?: string | null; // Phase 2: Zero-knowledge PBKDF2 encrypted private key backup
+  publicKey: string | null;
+  encryptedPrivateKey?: string | null;
   isOnline: boolean;
   lastSeen: string;
   createdAt: string;
@@ -30,9 +26,9 @@ export interface Message {
   id: string;
   senderId: string;
   roomId: string;
-  content: string;        // Plaintext after decryption (for 'encrypted' type, raw ciphertext until decrypted)
-  decrypted?: string;     // Resolved plaintext when type === 'encrypted'
-  type: 'text' | 'image' | 'system' | 'encrypted';
+  content: string;
+  decrypted?: string;
+  type: "text" | "image" | "system" | "encrypted";
   replyTo: string | null;
   replyToMessage: ReplyPreview | null;
   reactions: Reaction[];
@@ -49,7 +45,7 @@ export interface Message {
 export interface Room {
   id: string;
   name: string;
-  type: 'direct' | 'group';
+  type: "direct" | "group";
   isEncrypted: boolean;
   createdBy: string | null;
   createdAt: string | Date;
@@ -70,3 +66,15 @@ export interface AuthResponse {
   accessToken: string;
   refreshToken: string;
 }
+
+export type CategoryId = "all" | "groups" | "direct" | "starred" | "archive";
+
+export type TagCode = "CH" | "DM" | "SEC" | "AP";
+
+export const CATEGORY_NAMES: Record<CategoryId, string> = {
+  all: "All Inboxes",
+  groups: "Groups",
+  direct: "Direct Messages",
+  starred: "Starred & Pinned",
+  archive: "Archived Chats",
+};

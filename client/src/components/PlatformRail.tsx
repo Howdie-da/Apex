@@ -1,10 +1,4 @@
-// ============================================
-// client/src/components/PlatformRail.tsx
-// Column 1: Navigation Rail — w-16 fixed vertical nav (80% compact ratio)
-// Workspace & Chat Categories with Collapse Toggle
-// ============================================
-
-import React from 'react';
+import React from "react";
 import {
   MessagesSquare,
   User,
@@ -14,8 +8,8 @@ import {
   Settings,
   LogOut,
   PanelLeftClose,
-} from 'lucide-react';
-import type { CategoryId } from '../lib/chatData';
+} from "lucide-react";
+import type { CategoryId } from "../types";
 
 interface PlatformRailProps {
   active: CategoryId;
@@ -26,18 +20,43 @@ interface PlatformRailProps {
   onSettingsClick?: () => void;
 }
 
-const NAV_ITEMS: { id: CategoryId; Icon: React.FC<React.SVGProps<SVGSVGElement>>; label: string }[] = [
-  { id: 'all',      Icon: MessagesSquare as React.FC<React.SVGProps<SVGSVGElement>>, label: 'All Inboxes' },
-  { id: 'groups',   Icon: Users as React.FC<React.SVGProps<SVGSVGElement>>,          label: 'Groups' },
-  { id: 'direct',   Icon: User as React.FC<React.SVGProps<SVGSVGElement>>,           label: 'Direct Messages' },
-  { id: 'starred',  Icon: Star as React.FC<React.SVGProps<SVGSVGElement>>,           label: 'Starred' },
-  { id: 'archive',  Icon: Archive as React.FC<React.SVGProps<SVGSVGElement>>,        label: 'Archived' },
+const NAV_ITEMS: {
+  id: CategoryId;
+  Icon: React.FC<React.SVGProps<SVGSVGElement>>;
+  label: string;
+}[] = [
+  {
+    id: "all",
+    Icon: MessagesSquare as React.FC<React.SVGProps<SVGSVGElement>>,
+    label: "All Inboxes",
+  },
+  {
+    id: "groups",
+    Icon: Users as React.FC<React.SVGProps<SVGSVGElement>>,
+    label: "Groups",
+  },
+  {
+    id: "direct",
+    Icon: User as React.FC<React.SVGProps<SVGSVGElement>>,
+    label: "Direct Messages",
+  },
+  {
+    id: "starred",
+    Icon: Star as React.FC<React.SVGProps<SVGSVGElement>>,
+    label: "Starred",
+  },
+  {
+    id: "archive",
+    Icon: Archive as React.FC<React.SVGProps<SVGSVGElement>>,
+    label: "Archived",
+  },
 ];
 
 function cap(n: number): string {
-  return n > 9 ? '9+' : String(n);
+  return n > 9 ? "9+" : String(n);
 }
 
+// Bypasses layout thrashing by enforcing a strict fixed width (w-16) for the navigation rail across all viewports.
 export const PlatformRail: React.FC<PlatformRailProps> = ({
   active,
   onSelect,
@@ -51,15 +70,14 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
       className="flex flex-col items-center w-16 shrink-0 border-r border-border bg-sidebar h-full select-none"
       aria-label="Apex Navigation Rail"
     >
-      {/* Top: Inverted Brand Mark "A" Tile */}
+      {}
       <div
         className="w-16 h-16 shrink-0 bg-foreground text-background font-mono font-bold text-xl flex items-center justify-center border-b border-border"
         title="Apex Messenger"
       >
         A
       </div>
-
-      {/* Center: Navigation Items */}
+      {}
       <div className="flex flex-col items-center gap-2 py-3 flex-1 w-full overflow-y-auto">
         {NAV_ITEMS.map(({ id, Icon, label }) => {
           const isActive = active === id;
@@ -73,8 +91,8 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
               title={label}
               className={`relative w-11 h-11 border flex items-center justify-center transition-colors ${
                 isActive
-                  ? 'bg-foreground text-background border-foreground'
-                  : 'bg-transparent text-muted-foreground border-transparent hover:border-foreground hover:text-foreground'
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-transparent text-muted-foreground border-transparent hover:border-foreground hover:text-foreground"
               }`}
             >
               <Icon className="w-4.5 h-4.5" />
@@ -82,8 +100,8 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
                 <span
                   className={`absolute -top-1 -right-1 min-w-3.5 h-3.5 px-0.5 flex items-center justify-center font-mono text-[9px] font-bold border ${
                     isActive
-                      ? 'bg-background text-foreground border-foreground'
-                      : 'bg-foreground text-background border-background'
+                      ? "bg-background text-foreground border-foreground"
+                      : "bg-foreground text-background border-background"
                   }`}
                   aria-label={`${unread} unread messages`}
                 >
@@ -94,10 +112,9 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
           );
         })}
       </div>
-
-      {/* Bottom Actions */}
+      {}
       <div className="flex flex-col items-center gap-2 pb-3 pt-2 border-t border-border w-full shrink-0">
-        {/* Collapse Button */}
+        {}
         {onToggleCollapse && (
           <button
             aria-label="Collapse Navigation Rail"
@@ -108,7 +125,6 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
             <PanelLeftClose className="w-4.5 h-4.5" />
           </button>
         )}
-
         <button
           aria-label="Settings"
           title="Settings"
@@ -129,5 +145,4 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
     </nav>
   );
 };
-
 export default PlatformRail;

@@ -1,7 +1,3 @@
-// ============================================
-// server/src/types/index.ts
-// ============================================
-
 export interface User {
   id: string;
   username: string;
@@ -38,7 +34,7 @@ export interface Message {
   senderId: string;
   roomId: string;
   content: string;
-  type: 'text' | 'image' | 'system' | 'encrypted';
+  type: "text" | "image" | "system" | "encrypted";
   replyTo: string | null;
   replyToMessage: ReplyPreview | null;
   reactions: Reaction[];
@@ -70,17 +66,15 @@ export interface MessageRow {
   username: string;
   display_name: string;
   avatar_url: string | null;
-  // Joined from reply
   reply_to_content: string | null;
   reply_to_sender_name: string | null;
-  // Aggregated reactions as JSON
   reactions_json: string | null;
 }
 
 export interface Room {
   id: string;
   name: string;
-  type: 'direct' | 'group';
+  type: "direct" | "group";
   isEncrypted: boolean;
   createdBy: string | null;
   createdAt: Date;
@@ -134,6 +128,7 @@ export function toUser(row: UserRow): User {
 
 export function toMessage(row: MessageRow): Message {
   let reactions: Reaction[] = [];
+
   if (row.reactions_json) {
     try {
       reactions = JSON.parse(row.reactions_json);
@@ -147,15 +142,16 @@ export function toMessage(row: MessageRow): Message {
     senderId: row.sender_id,
     roomId: row.room_id,
     content: row.content,
-    type: row.type as Message['type'],
+    type: row.type as Message["type"],
     replyTo: row.reply_to || null,
-    replyToMessage: row.reply_to && row.reply_to_content
-      ? {
-          id: row.reply_to,
-          content: row.reply_to_content,
-          senderDisplayName: row.reply_to_sender_name || 'User',
-        }
-      : null,
+    replyToMessage:
+      row.reply_to && row.reply_to_content
+        ? {
+            id: row.reply_to,
+            content: row.reply_to_content,
+            senderDisplayName: row.reply_to_sender_name || "User",
+          }
+        : null,
     reactions,
     createdAt: row.created_at,
     isRead: row.is_read,
@@ -172,7 +168,7 @@ export function toRoom(row: RoomRow): Room {
   return {
     id: row.id,
     name: row.name,
-    type: row.type as Room['type'],
+    type: row.type as Room["type"],
     isEncrypted: row.is_encrypted,
     createdBy: row.created_by,
     createdAt: row.created_at,
@@ -181,8 +177,8 @@ export function toRoom(row: RoomRow): Room {
     dmUser: row.dm_user_id
       ? {
           id: row.dm_user_id,
-          username: row.dm_username || '',
-          displayName: row.dm_display_name || '',
+          username: row.dm_username || "",
+          displayName: row.dm_display_name || "",
           avatarUrl: row.dm_avatar_url || null,
           isOnline: row.dm_is_online,
           lastSeen: row.dm_last_seen,

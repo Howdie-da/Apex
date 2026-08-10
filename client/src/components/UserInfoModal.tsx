@@ -1,47 +1,43 @@
-import React, { useState } from 'react';
-import { X, User, Hash, Clock, Fingerprint, Edit2, Check } from 'lucide-react';
-import type { User as UserType } from '../types/index';
-import { useAuthStore } from '../store/useAuthStore';
-
+import React, { useState } from "react";
+import { X, User, Hash, Clock, Fingerprint, Edit2, Check } from "lucide-react";
+import type { User as UserType } from "../types/index";
+import { useAuthStore } from "../store/useAuthStore";
 interface UserInfoModalProps {
   user: UserType;
   isOpen: boolean;
   onClose: () => void;
 }
-
-const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) => {
+const UserInfoModal: React.FC<UserInfoModalProps> = ({
+  user,
+  isOpen,
+  onClose,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(user.displayName);
   const [isSaving, setIsSaving] = useState(false);
-  
   const { updateDisplayName } = useAuthStore();
-
   if (!isOpen) return null;
-
   const handleSave = async () => {
     if (!editName.trim() || editName.trim() === user.displayName) {
       setIsEditing(false);
       setEditName(user.displayName);
       return;
     }
-    
     setIsSaving(true);
     try {
       await updateDisplayName(editName);
       setIsEditing(false);
     } catch (err) {
       console.error(err);
-      setEditName(user.displayName); // revert on error
+      setEditName(user.displayName);
     } finally {
       setIsSaving(false);
     }
   };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-background w-full max-w-sm border border-border flex flex-col shadow-2xl rounded-none">
-        
-        {/* Header */}
+        {}
         <div className="flex items-center justify-between p-4 border-b border-border bg-sidebar">
           <h2 className="font-mono text-sm font-bold tracking-wider uppercase text-foreground">
             My Info
@@ -54,11 +50,9 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
             <X className="w-4 h-4" />
           </button>
         </div>
-
-        {/* Content */}
+        {}
         <div className="p-6 flex flex-col gap-6">
-          
-          {/* Avatar Placeholder */}
+          {}
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 bg-primary text-primary-foreground font-mono font-bold text-2xl flex items-center justify-center border border-border">
               {user.displayName.slice(0, 2).toUpperCase()}
@@ -72,12 +66,9 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
               </span>
             </div>
           </div>
-
           <div className="w-full h-px bg-border/50" />
-
-          {/* Details */}
+          {}
           <div className="flex flex-col gap-4">
-            
             <div className="flex items-start gap-3">
               <div className="mt-0.5 p-1.5 bg-sidebar border border-border text-muted-foreground">
                 <User className="w-4 h-4" />
@@ -86,7 +77,6 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
                 <span className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase mb-0.5">
                   Display Name
                 </span>
-                
                 {isEditing ? (
                   <div className="flex items-center gap-2 mt-1">
                     <input
@@ -97,8 +87,8 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
                       autoFocus
                       disabled={isSaving}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleSave();
-                        if (e.key === 'Escape') {
+                        if (e.key === "Enter") handleSave();
+                        if (e.key === "Escape") {
                           setIsEditing(false);
                           setEditName(user.displayName);
                         }
@@ -140,7 +130,6 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
                 )}
               </div>
             </div>
-
             <div className="flex items-start gap-3">
               <div className="mt-0.5 p-1.5 bg-sidebar border border-border text-muted-foreground">
                 <Hash className="w-4 h-4" />
@@ -154,7 +143,6 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
                 </span>
               </div>
             </div>
-
             <div className="flex items-start gap-3">
               <div className="mt-0.5 p-1.5 bg-sidebar border border-border text-muted-foreground">
                 <Fingerprint className="w-4 h-4" />
@@ -163,12 +151,14 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
                 <span className="font-mono text-[10px] tracking-wider text-muted-foreground uppercase mb-0.5">
                   User ID
                 </span>
-                <span className="text-xs font-mono text-foreground truncate opacity-80" title={user.id}>
+                <span
+                  className="text-xs font-mono text-foreground truncate opacity-80"
+                  title={user.id}
+                >
                   {user.id}
                 </span>
               </div>
             </div>
-
             {user.createdAt && (
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 p-1.5 bg-sidebar border border-border text-muted-foreground">
@@ -180,19 +170,17 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
                   </span>
                   <span className="text-sm text-foreground truncate">
                     {new Date(user.createdAt).toLocaleDateString(undefined, {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
                     })}
                   </span>
                 </div>
               </div>
             )}
-
           </div>
         </div>
-
-        {/* Footer */}
+        {}
         <div className="p-4 border-t border-border bg-sidebar flex justify-end">
           <button
             onClick={onClose}
@@ -201,10 +189,8 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({ user, isOpen, onClose }) 
             Done
           </button>
         </div>
-
       </div>
     </div>
   );
 };
-
 export default UserInfoModal;

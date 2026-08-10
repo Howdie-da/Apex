@@ -1,16 +1,11 @@
-// ============================================
-// client/src/components/DetailsPanel.tsx
-// Details Panel — Top Popup inside MessageThread (Room Overview & Security)
-// ============================================
-
-import React, { useState } from 'react';
-import { X, Edit2, Check, UserPlus, Users, Lock } from 'lucide-react';
-import type { Room } from '../types/index';
-import { fetchAPI } from '../lib/api';
-import { useAuthStore } from '../store/useAuthStore';
-import { useChatStore } from '../store/useChatStore';
-import AddMemberModal from './AddMemberModal';
-import ViewMembersModal from './ViewMembersModal';
+import React, { useState } from "react";
+import { X, Edit2, Check, UserPlus, Users, Lock } from "lucide-react";
+import type { Room } from "../types/index";
+import { fetchAPI } from "../lib/api";
+import { useAuthStore } from "../store/useAuthStore";
+import { useChatStore } from "../store/useChatStore";
+import AddMemberModal from "./AddMemberModal";
+import ViewMembersModal from "./ViewMembersModal";
 
 interface DetailsPanelProps {
   room: Room | null;
@@ -18,38 +13,44 @@ interface DetailsPanelProps {
 }
 
 function getAvatarInitials(name: string): string {
-  const cleaned = name.replace(/[^a-zA-Z0-9]/g, '');
-  return cleaned.slice(0, 2).toUpperCase() || 'AP';
+  const cleaned = name.replace(/[^a-zA-Z0-9]/g, "");
+  return cleaned.slice(0, 2).toUpperCase() || "AP";
 }
 
-export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => {
+export const DetailsPanel: React.FC<DetailsPanelProps> = ({
+  room,
+  onClose,
+}) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState(room?.name || '');
+  const [editName, setEditName] = useState(room?.name || "");
   const [isSaving, setIsSaving] = useState(false);
   const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
   const [viewMembersModalOpen, setViewMembersModalOpen] = useState(false);
-
-  const currentUser = useAuthStore(s => s.user);
+  const currentUser = useAuthStore((s) => s.user);
   const { updateRoomName } = useChatStore();
-
   if (!room) return null;
+  const isGroup = room.type === "group";
+  const handle = isGroup
+    ? `#${room.name}`
+    : room.dmUser
+      ? `@${room.dmUser.username}`
+      : "DM";
+  const initials = getAvatarInitials(
+    room.dmUser ? room.dmUser.displayName : room.name,
+  );
 
-  const isGroup = room.type === 'group';
-  const handle = isGroup ? `#${room.name}` : (room.dmUser ? `@${room.dmUser.username}` : 'DM');
-  const initials = getAvatarInitials(room.dmUser ? room.dmUser.displayName : room.name);
-
+  // We explicitly reset the internal edit state to the prop's source of truth on error to prevent desync bugs.
   const handleSave = async () => {
     if (!editName.trim() || editName.trim() === room.name) {
       setIsEditing(false);
       setEditName(room.name);
       return;
     }
-
     setIsSaving(true);
     try {
       await fetchAPI(`/rooms/${room.id}/name`, {
-        method: 'PATCH',
-        body: JSON.stringify({ name: editName.trim() })
+        method: "PATCH",
+        body: JSON.stringify({ name: editName.trim() }),
       });
       updateRoomName(room.id, editName.trim());
       setIsEditing(false);
@@ -63,7 +64,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
 
   return (
     <div className="border-b border-border bg-card p-3 sm:p-4 shrink-0 select-none animate-slide-down w-full">
-      {/* Top Bar: Title & Close Button */}
+      {}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/60">
         <span className="font-mono text-[11px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
           <span className="w-1.5 h-1.5 bg-foreground inline-block" />
@@ -78,10 +79,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
-
-      {/* Main Content: Responsive layout (Column on tiny screens, Row on normal screens) */}
+      {}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        {/* Profile Info */}
+        {}
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-11 h-11 border border-border bg-background text-foreground font-mono font-bold text-sm flex items-center justify-center shrink-0">
             {initials}
@@ -97,8 +97,8 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
                   autoFocus
                   disabled={isSaving}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSave();
-                    if (e.key === 'Escape') {
+                    if (e.key === "Enter") handleSave();
+                    if (e.key === "Escape") {
                       setIsEditing(false);
                       setEditName(room.name);
                     }
@@ -127,7 +127,9 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
             ) : (
               <div className="flex items-center gap-2 group mb-0.5">
                 <h3 className="font-bold text-sm text-foreground truncate">
-                  {isGroup ? `#${room.name}` : room.dmUser?.displayName || 'Direct Message'}
+                  {isGroup
+                    ? `#${room.name}`
+                    : room.dmUser?.displayName || "Direct Message"}
                 </h3>
                 {isGroup && (
                   <button
@@ -149,14 +151,13 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
             <div className="flex items-center gap-2 mt-1">
               {!isGroup && (
                 <span className="font-mono text-[9px] font-bold tracking-wider px-1.5 py-0.5 border border-border bg-foreground text-background">
-                  {room.dmUser?.isOnline ? 'Online' : 'Offline'}
+                  {room.dmUser?.isOnline ? "Online" : "Offline"}
                 </span>
               )}
             </div>
           </div>
         </div>
-
-        {/* Security Badges & Group Actions */}
+        {}
         <div className="flex flex-col gap-2 w-full md:w-auto">
           {isGroup && (
             <div className="flex flex-col gap-2 w-full md:w-auto">
@@ -182,7 +183,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
           )}
         </div>
       </div>
-
       {addMemberModalOpen && currentUser && (
         <AddMemberModal
           currentUserId={currentUser.id}
@@ -190,7 +190,6 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
           onClose={() => setAddMemberModalOpen(false)}
         />
       )}
-
       {viewMembersModalOpen && (
         <ViewMembersModal
           roomId={room.id}
@@ -200,5 +199,4 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({ room, onClose }) => 
     </div>
   );
 };
-
 export default DetailsPanel;
