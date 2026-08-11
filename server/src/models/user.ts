@@ -129,27 +129,13 @@ export async function findByExactUsername(
   return rows[0] ? toPublicUser(rows[0]) : null;
 }
 
-// Uses ILIKE for case-insensitive search.
-// Note: This forces a sequential scan unless we add a pg_trgm index on username/display_name.
-// Since the users table is capped at low volume right now, the overhead of a trigram index isn't worth the write latency.
-// TODO(perf): Add GIN trigram index when user count exceeds 10,000.
+// Uses exact match for user search, returning at most one user in an array.
 export async function searchUsers(
   query: string,
   excludeUserId?: string,
 ): Promise<User[]> {
-
-  const { rows } = await pool.query<UserRow>(
-    `
-    SELECT * FROM users
-    WHERE (username ILIKE $1 OR display_name ILIKE $1)
-      AND ($2::uuid IS NULL OR id != $2)
-    ORDER BY is_online DESC, display_name ASC
-    LIMIT 20
-    `,
-    [`%${query.trim()}%`, excludeUserId || null],
-  );
-  
-  return rows.map(toPublicUser);
+  const match = await findByExactUsername(query, excludeUserId);
+  return match ? [match] : [];
 }
 
 export async function getAllUsers(excludeUserId?: string): Promise<User[]> {
