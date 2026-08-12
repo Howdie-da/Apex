@@ -1,6 +1,6 @@
 {
   "name": "apex-server",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Apex chat backend — Express + Socket.io + PostgreSQL",
   "main": "src/index.ts",
@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1107.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",

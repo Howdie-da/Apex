@@ -8,9 +8,7 @@ const log = logger.child({ module: "routes:keys" });
 
 // Handles the upload of public keys for ECDH key exchange, alongside an optionally encrypted
 // private key backup. The server never sees the plaintext private key (Zero-Knowledge Architecture).
-router.put(
-  "/public",
-  authMiddleware,
+router.put("/public", authMiddleware,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = (req as any).user?.userId;
@@ -57,9 +55,7 @@ router.put(
 );
 
 // Fetches a target user's public key so the local client can derive the shared ECDH secret.
-router.get(
-  "/:userId",
-  authMiddleware,
+router.get("/:userId", authMiddleware,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const targetUserId = Array.isArray(req.params.userId)

@@ -21,9 +21,7 @@ const ALLOWED_EMOJIS = new Set([
   "💯",
 ]);
 
-router.post(
-  "/:messageId/reactions",
-  authMiddleware,
+router.post("/:messageId/reactions", authMiddleware,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = (req as any).user?.userId;
@@ -53,9 +51,7 @@ router.post(
   },
 );
 
-router.delete(
-  "/:messageId/reactions/:emoji",
-  authMiddleware,
+router.delete("/:messageId/reactions/:emoji", authMiddleware,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = (req as any).user?.userId;

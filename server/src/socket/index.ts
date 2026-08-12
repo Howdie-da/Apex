@@ -7,6 +7,11 @@ import type { TypedServer, AuthenticatedSocket } from "../types/socket";
 
 const log = logger.child({ module: "socket" });
 
+// Keyed by userId. Holds the pending offline timer so we can cancel it if
+// the user reconnects before the grace period expires.
+const GRACE_MS = 3000;
+const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
 export function registerSocketHandlers(io: TypedServer): void {
   io.on("connection", async (socket) => {
     const authenticatedSocket = socket as AuthenticatedSocket;
@@ -16,6 +21,14 @@ export function registerSocketHandlers(io: TypedServer): void {
       { socketId: socket.id, userId: user.userId, username: user.username },
       "User connected",
     );
+
+    // Cancel any pending offline timer for this user (handles rapid reconnects).
+    const pending = disconnectTimers.get(user.userId);
+    if (pending) {
+      clearTimeout(pending);
+      disconnectTimers.delete(user.userId);
+      log.debug({ userId: user.userId }, "Cancelled pending offline timer on reconnect");
+    }
 
     try {
       await UserModel.setOnlineStatus(user.userId, true);
@@ -47,22 +60,29 @@ export function registerSocketHandlers(io: TypedServer): void {
         "User disconnected",
       );
 
-      try {
-        // Note: Disconnect fires eagerly on network drops.
-        // TODO(perf): We should add a 5s debounce here to prevent rapid online/offline flickering on flaky mobile connections.
-        await UserModel.setOnlineStatus(user.userId, false);
-        
-        socket.broadcast.emit("user:offline", {
-          userId: user.userId,
-          username: user.username,
-        });
+      // Grace period before marking offline — prevents flickering on brief network drops.
+      const timer = setTimeout(async () => {
+        disconnectTimers.delete(user.userId);
 
-      } catch (err) {
-        log.error(
-          { err, userId: user.userId },
-          "Error during disconnect cleanup",
-        );
-      }
+        try {
+          await UserModel.setOnlineStatus(user.userId, false);
+          
+          socket.broadcast.emit("user:offline", {
+            userId: user.userId,
+            username: user.username,
+          });
+
+          log.debug({ userId: user.userId }, "User marked offline after grace period");
+
+        } catch (err) {
+          log.error(
+            { err, userId: user.userId },
+            "Error during disconnect cleanup",
+          );
+        }
+      }, GRACE_MS);
+
+      disconnectTimers.set(user.userId, timer);
     });
   });
 }

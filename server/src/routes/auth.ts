@@ -38,9 +38,7 @@ async function storeRefreshToken(userId: string, token: string): Promise<void> {
   );
 }
 
-router.post(
-  "/register",
-  authLimiter,
+router.post("/register", authLimiter,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { username, displayName, password } = req.body;
@@ -104,9 +102,7 @@ router.post(
   },
 );
 
-router.post(
-  "/login",
-  authLimiter,
+router.post("/login", authLimiter,
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { username, password } = req.body;
@@ -167,8 +163,7 @@ router.post(
   },
 );
 
-router.post(
-  "/refresh", 
+router.post("/refresh", 
   async (req: Request, res: Response): Promise<void> => {
     try {
       const { refreshToken } = req.body;
