@@ -1,4 +1,4 @@
-# ⚡ Apex &nbsp;`v1.0.0`
+# Apex
 
 **A privacy-first, high-performance, real-time chat application.**
 
@@ -6,23 +6,37 @@ Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, y
 
 ---
 
-## ✨ Features
+## Table of Contents
 
-| Feature | Description |
-|---|---|
-| ⚡ **Real-Time Messaging** | Instant WebSocket communication via Socket.io v4 with connection-state recovery |
-| 🔒 **End-to-End Encryption** | ECDH P-256 key exchange + AES-GCM-256 per-message encryption for all DMs — the server never sees plaintext |
-| 🔑 **Zero-Knowledge Key Backup** | Encrypted private key backup stored server-side, unlocked only with your login password (PBKDF2 + AES-GCM) |
-| 👥 **Groups & DMs** | Create group rooms or direct messages, with live member lists and room management |
-| 💬 **Rich Messaging** | Emoji reactions, threaded replies, typing indicators, and cursor-based infinite scroll history |
-| ✅ **Read Receipts** | Per-message read status with real-time delivery to all room members |
-| 🛡️ **Secure Auth** | Dual-token system: short-lived JWTs (15 min) + hashed refresh token rotation (7 days) with rate limiting |
-| 📡 **Online Presence** | Live user online/offline status broadcast across all rooms |
-| 🏥 **Health & Readiness Checks** | `/health` and `/ready` endpoints for load-balancer probes |
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Quickstart](#quickstart)
+- [Project Structure](#project-structure)
+- [Security Notes](#security-notes)
+- [Roadmap](#roadmap)
+- [Future Updates](#future-updates)
+- [Author](#author)
+- [License](#license)
 
 ---
 
-## 🛠 Tech Stack
+## Features
+
+| Feature | Description |
+|---|---|
+| **Real-Time Messaging** | Instant WebSocket communication via Socket.io v4 with connection-state recovery |
+| **End-to-End Encryption** | ECDH P-256 key exchange + AES-GCM-256 per-message encryption for all DMs — the server never sees plaintext |
+| **Zero-Knowledge Key Backup** | Encrypted private key backup stored server-side, unlocked only with your login password (PBKDF2 + AES-GCM) |
+| **Groups & DMs** | Create group rooms or direct messages, with live member lists and room management |
+| **Rich Messaging** | Emoji reactions, threaded replies, typing indicators, and cursor-based infinite scroll history |
+| **Read Receipts** | Per-message read status with real-time delivery to all room members |
+| **Secure Auth** | Dual-token system: short-lived JWTs (15 min) + hashed refresh token rotation (7 days) with rate limiting |
+| **Online Presence** | Live user online/offline status broadcast across all rooms |
+| **Health & Readiness Checks** | `/health` and `/ready` endpoints for load-balancer probes |
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -38,7 +52,7 @@ Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, y
 
 ---
 
-## 🚀 Quickstart
+## Quickstart
 
 ### Prerequisites
 
@@ -48,36 +62,49 @@ Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, y
 
 ### Setup & Installation
 
-```bash
-# 1. Clone the repository
-git clone <your-repo-url>
-cd Apex
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd Apex
+   ```
 
-# 2. Install all dependencies (monorepo — client + server)
-npm install
+2. **Install dependencies**
 
-# 3. Start PostgreSQL via Docker
-docker compose up -d
+   This is a monorepo — one command installs both client and server packages.
+   ```bash
+   npm install
+   ```
 
-# 4. Configure environment variables
-cp .env.example .env
-# Open .env and set strong values for JWT_SECRET and JWT_REFRESH_SECRET
+3. **Configure environment variables**
+   ```bash
+   cp .env.example .env
+   ```
+   Open `.env` and set strong, unique values for `JWT_SECRET` and `JWT_REFRESH_SECRET`.
 
-# 5. Run development servers (server :3001, client :5173)
-npm run dev
-```
+4. **Start the database**
 
-> The database schema is auto-initialized on first startup — no manual migrations needed.
+   Ensure Docker is running, then spin up PostgreSQL:
+   ```bash
+   docker compose up -d
+   ```
+   > The schema is auto-initialized on first startup — no manual migrations needed.
+
+5. **Run the development servers**
+
+   Starts both the backend (`:3001`) and frontend (`:5173`) in parallel:
+   ```bash
+   npm run dev
+   ```
 
 ### Without Docker (local PostgreSQL)
 
-1. Create a database: `createdb apex`
+1. Create the database: `createdb apex`
 2. In `.env`, set `DATABASE_URL=postgresql://<user>:<password>@localhost:5432/apex`
 3. Run `npm run dev`
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Apex/
@@ -105,7 +132,7 @@ Apex/
 
 ---
 
-## 🔐 Security Notes
+## Security Notes
 
 - **Passwords** are hashed with bcrypt (cost 12) — never stored in plaintext.
 - **Refresh tokens** are SHA-256 hashed before DB storage; the plaintext is client-only.
@@ -116,7 +143,7 @@ Apex/
 
 ---
 
-## 🗺 Roadmap
+## Roadmap
 
 - [x] **Phase 1** — Core Architecture & Real-Time Sync
 - [x] **Phase 2** — End-to-End Encryption (E2EE) Protocol
@@ -124,7 +151,7 @@ Apex/
 
 ---
 
-## 🔭 Future Updates
+## Future Updates
 
 - **Media Uploads** — Zero-knowledge file & image sharing via Cloudflare R2 (S3-compatible). Files are encrypted client-side with AES-GCM before upload; the server only stores an opaque blob.
 - **Redis Pub/Sub** — Replace in-process Socket.io event routing with a Redis adapter to allow horizontal scaling across multiple server instances without sticky sessions.
@@ -135,6 +162,12 @@ Apex/
 
 ---
 
-## 📄 License
+## Author
+
+Akshat Nagar
+
+---
+
+## License
 
 MIT
