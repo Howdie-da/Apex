@@ -147,7 +147,7 @@ Apex/
 
 - [x] **Phase 1** — Core Architecture & Real-Time Sync
 - [x] **Phase 2** — End-to-End Encryption (E2EE) Protocol
-- [ ] **Phase 3** — Docker Containerisation & Cloud Deployment
+- [x] **Phase 3** — Docker Containerisation & Cloud Deployment
 
 ---
 
