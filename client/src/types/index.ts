@@ -67,14 +67,11 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
-export type CategoryId = "all" | "groups" | "direct" | "starred" | "archive";
-
-export type TagCode = "CH" | "DM" | "SEC" | "AP";
+export type CategoryId = "all" | "direct" | "groups";
 
 export const CATEGORY_NAMES: Record<CategoryId, string> = {
   all: "All Inboxes",
-  groups: "Groups",
   direct: "Direct Messages",
-  starred: "Starred & Pinned",
-  archive: "Archived Chats",
+  groups: "Groups",
 };
+

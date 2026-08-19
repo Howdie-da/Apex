@@ -44,7 +44,7 @@ export function registerSocketHandlers(io: TypedServer): void {
       );
 
       // We join the socket to all DB rooms up front to handle multi-tab synchronization natively.
-      // Joining `user.userId` acts as a private channel for direct events (like DM creation).
+      // Joining `user.userId` acts as a private room for direct events (like DM creation).
       userRooms.forEach((r) => socket.join(r.room_id));
       socket.join(user.userId);
 

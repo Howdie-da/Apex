@@ -189,7 +189,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           ) : (
             filteredRooms.map((r) => {
               const isActive = activeRoomId === r.id;
-              let tag = "CH";
+              let tag = "GP";
               let displayName = `#${r.name}`;
               if (r.type === "direct") {
                 tag = r.dmUser
@@ -198,8 +198,6 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 displayName = r.dmUser
                   ? r.dmUser.displayName || r.dmUser.username
                   : "Direct Message";
-              } else if (r.name === "General") {
-                tag = "AP";
               }
               return (
                 <button

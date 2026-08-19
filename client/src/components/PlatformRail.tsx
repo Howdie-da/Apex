@@ -3,8 +3,6 @@ import {
   MessagesSquare,
   User,
   Users,
-  Star,
-  Archive,
   Settings,
   LogOut,
   PanelLeftClose,
@@ -31,24 +29,14 @@ const NAV_ITEMS: {
     label: "All Inboxes",
   },
   {
-    id: "groups",
-    Icon: Users as React.FC<React.SVGProps<SVGSVGElement>>,
-    label: "Groups",
-  },
-  {
     id: "direct",
     Icon: User as React.FC<React.SVGProps<SVGSVGElement>>,
     label: "Direct Messages",
   },
   {
-    id: "starred",
-    Icon: Star as React.FC<React.SVGProps<SVGSVGElement>>,
-    label: "Starred",
-  },
-  {
-    id: "archive",
-    Icon: Archive as React.FC<React.SVGProps<SVGSVGElement>>,
-    label: "Archived",
+    id: "groups",
+    Icon: Users as React.FC<React.SVGProps<SVGSVGElement>>,
+    label: "Groups",
   },
 ];
 
