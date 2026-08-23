@@ -15,6 +15,7 @@ services:
     buildCommand: npm ci && npm run build -w server
     startCommand: node server/dist/index.js
     healthCheckPath: /ready
+    autoDeployTrigger: commit
     envVars:
       - key: NODE_ENV
         value: production
@@ -34,7 +35,6 @@ services:
   - type: web
     name: apex-client
     runtime: static
-    plan: free
     rootDir: .
     buildCommand: npm ci && npm run build -w client
     staticPublishPath: ./client/dist
