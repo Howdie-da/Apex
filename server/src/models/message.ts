@@ -33,8 +33,7 @@ export async function createMessage(
       u.display_name,
       u.avatar_url,
       ri.reply_content AS reply_to_content,
-      ri.reply_sender  AS reply_to_sender_name,
-      '[]'::text       AS reactions_json
+      ri.reply_sender  AS reply_to_sender_name
     FROM new_msg
     JOIN users u ON new_msg.sender_id = u.id
     LEFT JOIN reply_info ri ON true
@@ -61,8 +60,6 @@ export async function getMessages(
 
   // Using cursor-based pagination (created_at < $2) rather than OFFSET to prevent O(N) scan 
   // degradation on deep chat histories. We buffer the client by strictly capping the limit.
-  // TODO(perf): The correlated subquery for reactions mitigates the N+1 problem, but if 
-  // batch sizes scale up, we should evaluate fetching reactions in a parallel query.
   const { rows } = await pool.query<MessageRow>(
     `
     SELECT 
@@ -71,28 +68,7 @@ export async function getMessages(
       u.display_name,
       u.avatar_url,
       rm.content       AS reply_to_content,
-      ru.display_name  AS reply_to_sender_name,
-      COALESCE(
-        (
-          SELECT json_agg(
-            json_build_object(
-              'emoji',   r.emoji,
-              'count',   r.cnt,
-              'userIds', r.user_ids
-            )
-          )
-          FROM (
-            SELECT
-              emoji,
-              COUNT(*)::int AS cnt,
-              json_agg(user_id::text) AS user_ids
-            FROM message_reactions
-            WHERE message_id = m.id
-            GROUP BY emoji
-          ) r
-        ),
-        '[]'
-      )::text AS reactions_json
+      ru.display_name  AS reply_to_sender_name
     FROM messages m
     JOIN users u ON m.sender_id = u.id
     LEFT JOIN messages rm ON m.reply_to = rm.id
@@ -106,64 +82,4 @@ export async function getMessages(
   );
   
   return rows.map(toMessage);
-}
-
-export async function addReaction(
-  messageId: string,
-  userId: string,
-  emoji: string,
-): Promise<void> {
-
-  // ON CONFLICT DO NOTHING, handles duplicate rapid-fire clicks from the client idempotently.
-  await pool.query(
-    `
-    INSERT INTO message_reactions (message_id, user_id, emoji)
-    VALUES ($1, $2, $3)
-    ON CONFLICT DO NOTHING
-    `,
-    [messageId, userId, emoji],
-  );
-  
-  log.debug({ messageId, userId, emoji }, "Reaction added");
-}
-
-export async function removeReaction(
-  messageId: string,
-  userId: string,
-  emoji: string,
-): Promise<void> {
-
-  await pool.query(
-    `
-    DELETE FROM message_reactions
-    WHERE message_id = $1 AND user_id = $2 AND emoji = $3
-    `,
-    [messageId, userId, emoji],
-  );
-  
-  log.debug({ messageId, userId, emoji }, "Reaction removed");
-}
-
-export async function getReactions(
-  messageId: string,
-): Promise<{ emoji: string; count: number; userIds: string[] }[]> {
-
-  const { rows } = await pool.query(
-    `
-    SELECT 
-      emoji, 
-      COUNT(*)::int AS count, 
-      json_agg(user_id::text) AS user_ids
-    FROM message_reactions
-    WHERE message_id = $1
-    GROUP BY emoji
-    `,
-    [messageId],
-  );
-  
-  return rows.map((r) => ({
-    emoji: r.emoji,
-    count: r.count,
-    userIds: r.user_ids,
-  }));
 }

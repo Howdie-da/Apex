@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Room, Message, Reaction } from "../types/index";
+import type { Room, Message } from "../types/index";
 import { fetchAPI } from "../lib/api";
 import { socket } from "../config/socket";
 import { deriveSharedKey, decryptMessage, encryptMessage } from "../lib/crypto";
@@ -47,7 +47,7 @@ interface ChatState {
   loadRoomMessages: (roomId: string) => Promise<void>;
   loadMoreHistory: () => Promise<void>;
   addMessage: (message: Message) => void;
-  updateMessageReactions: (messageId: string, reactions: Reaction[]) => void;
+
   addTypingUser: (roomId: string, userId: string, username: string) => void;
   removeTypingUser: (roomId: string, userId: string) => void;
   sendMessage: (
@@ -56,8 +56,7 @@ interface ChatState {
     type?: Message["type"],
     replyTo?: string,
   ) => Promise<void>;
-  reactToMessage: (messageId: string, emoji: string, roomId: string) => void;
-  removeReaction: (messageId: string, emoji: string, roomId: string) => void;
+
   markRoomRead: (roomId: string) => Promise<void>;
   handleReadReceipt: (messageIds: string[]) => void;
   emitTyping: (roomId: string) => void;
@@ -293,13 +292,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
   },
 
-  updateMessageReactions: (messageId, reactions) => {
-    set((state) => ({
-      messages: state.messages.map((m) =>
-        m.id === messageId ? { ...m, reactions } : m,
-      ),
-    }));
-  },
 
   addTypingUser: (roomId, userId, username) =>
     set((state) => {
@@ -354,13 +346,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     set({ replyTo: null });
   },
 
-  reactToMessage: (messageId, emoji, roomId) => {
-    socket.emit("chat:react", { messageId, emoji, roomId });
-  },
-
-  removeReaction: (messageId, emoji, roomId) => {
-    socket.emit("chat:unreact", { messageId, emoji, roomId });
-  },
 
   markRoomRead: async (roomId) => {
     set((state) => ({

@@ -7,7 +7,7 @@ import {
   X,
   CheckCheck,
 } from "lucide-react";
-import type { Message, Room, Reaction } from "../types/index";
+import type { Message, Room } from "../types/index";
 import type { User } from "../types/index";
 import DetailsPanel from "./DetailsPanel";
 import { useChatStore } from "../store/useChatStore";
@@ -27,7 +27,6 @@ interface MessageThreadProps {
   onToggleDetails: () => void;
   onBack?: () => void;
 }
-const QUICK_REACTIONS = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
 function getAvatarInitials(name: string): string {
   const cleaned = name.replace(/[^a-zA-Z0-9]/g, "");
@@ -46,54 +45,6 @@ function formatTime(isoString: string): string {
     return "--:--";
   }
 }
-interface ReactionBarProps {
-  reactions: Reaction[];
-  currentUserId: string | undefined;
-  onToggle: (emoji: string, alreadyReacted: boolean) => void;
-}
-const ReactionBar: React.FC<ReactionBarProps> = ({
-  reactions,
-  currentUserId,
-  onToggle,
-}) => {
-  if (reactions.length === 0) return null;
-  return (
-    <div className="flex flex-wrap gap-1 mt-1">
-      {reactions.map((r, idx) => (
-        <button
-          key={idx}
-          onClick={() =>
-            onToggle(r.emoji, r.userIds.includes(currentUserId || ""))
-          }
-          className={`flex items-center gap-1 px-2 py-0.5 text-xs transition-colors rounded-none shadow-sm border ${r.userIds.includes(currentUserId || "")
-            ? "bg-zinc-800 text-zinc-100 border-zinc-700"
-            : "bg-zinc-900 text-zinc-400 border-zinc-800 hover:bg-zinc-800 hover:text-zinc-200"
-            }`}
-        >
-          <span>{r.emoji}</span>
-          <span className="font-mono text-[10px]">{r.count}</span>
-        </button>
-      ))}
-    </div>
-  );
-};
-interface EmojiPickerProps {
-  onPick: (emoji: string) => void;
-}
-const EmojiPicker: React.FC<EmojiPickerProps> = ({ onPick }) => (
-  <div className="flex gap-1 bg-zinc-900 border border-zinc-700 p-1.5 shadow-lg rounded-none">
-    {QUICK_REACTIONS.map((e) => (
-      <button
-        key={e}
-        onClick={() => onPick(e)}
-        className="text-base hover:scale-125 transition-transform px-0.5"
-        title={e}
-      >
-        {e}
-      </button>
-    ))}
-  </div>
-);
 
 export const MessageThread: React.FC<MessageThreadProps> = ({
   room,
@@ -110,12 +61,11 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
 }) => {
   const [inputText, setInputText] = useState("");
   const [hoveredMsgId, setHoveredMsgId] = useState<string | null>(null);
-  const [emojiPickerFor, setEmojiPickerFor] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isTypingRef = useRef(false);
-  const { replyTo, setReplyTo, reactToMessage, removeReaction, markRoomRead } =
+  const { replyTo, setReplyTo, markRoomRead } =
     useChatStore();
 
   const [groupMembers, setGroupMembers] = useState<User[]>([]);
@@ -181,12 +131,7 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
     scrollRef.current?.scrollIntoView({ behavior: "auto" });
   }, [messages.length]);
 
-  useEffect(() => {
-    if (!emojiPickerFor) return;
-    const handler = () => setEmojiPickerFor(null);
-    window.addEventListener("click", handler);
-    return () => window.removeEventListener("click", handler);
-  }, [emojiPickerFor]);
+
   if (!room) {
     return (
       <div className="flex-1 min-h-screen flex items-center justify-center bg-background p-6 select-none">
@@ -246,30 +191,6 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
       isTypingRef.current = false;
       onStopTyping();
     }, 2000);
-  };
-  const handleEmojiPick = (messageId: string, emoji: string) => {
-    const msg = messages.find((m) => m.id === messageId);
-    const alreadyReacted = msg?.reactions.some(
-      (r) =>
-        r.emoji === emoji && currentUser && r.userIds.includes(currentUser.id),
-    );
-    if (alreadyReacted) {
-      removeReaction(messageId, emoji, room.id);
-    } else {
-      reactToMessage(messageId, emoji, room.id);
-    }
-    setEmojiPickerFor(null);
-  };
-  const handleReactionToggle = (
-    messageId: string,
-    emoji: string,
-    alreadyReacted: boolean,
-  ) => {
-    if (alreadyReacted) {
-      removeReaction(messageId, emoji, room.id);
-    } else {
-      reactToMessage(messageId, emoji, room.id);
-    }
   };
   const isEmpty = !inputText.trim();
   const placeholderText = `Message ${isDirect ? "" : "#"}${roomName}...`;
@@ -386,7 +307,6 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
               onMouseEnter={() => setHoveredMsgId(msg.id)}
               onMouseLeave={() => {
                 setHoveredMsgId(null);
-                setEmojiPickerFor(null);
               }}
             >
               <div
@@ -463,52 +383,18 @@ export const MessageThread: React.FC<MessageThreadProps> = ({
                       <div
                         className={`absolute top-0 flex flex-row border border-zinc-700 bg-zinc-900 ${isMine ? "right-full mr-2" : "left-full ml-2"} z-10`}
                       >
-                        { }
                         <button
                           onClick={() => setReplyTo(msg)}
-                          className="w-7 h-7 rounded-none bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors flex items-center justify-center border-r border-zinc-700"
+                          className="w-7 h-7 rounded-none bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors flex items-center justify-center"
                           title="Reply"
                         >
                           <CornerUpLeft className="w-3.5 h-3.5" />
                         </button>
-                        { }
-                        <div className="relative w-fit">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setEmojiPickerFor(
-                                emojiPickerFor === msg.id ? null : msg.id,
-                              );
-                            }}
-                            className="w-7 h-7 rounded-none bg-transparent text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors flex items-center justify-center text-sm"
-                            title="React"
-                          >
-                            +
-                          </button>
-                          {emojiPickerFor === msg.id && (
-                            <div className="absolute bottom-full mb-1 z-50 left-1/2 -translate-x-1/2">
-                              <EmojiPicker
-                                onPick={(emoji) =>
-                                  handleEmojiPick(msg.id, emoji)
-                                }
-                              />
-                            </div>
-                          )}
-                        </div>
                       </div>
                     )}
                   </div>
                 </div>
-                { }
-                {msg.reactions && msg.reactions.length > 0 && (
-                  <ReactionBar
-                    reactions={msg.reactions}
-                    currentUserId={currentUser?.id}
-                    onToggle={(emoji, alreadyReacted) =>
-                      handleReactionToggle(msg.id, emoji, alreadyReacted)
-                    }
-                  />
-                )}
+
               </div>
             </div>
           );

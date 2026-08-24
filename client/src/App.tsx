@@ -34,7 +34,6 @@ const ApexMainApp: React.FC = () => {
     addTypingUser,
     removeTypingUser,
     setConnected,
-    updateMessageReactions,
     addRoom,
     updateUserStatus,
     handleReadReceipt,
@@ -62,8 +61,6 @@ const ApexMainApp: React.FC = () => {
       addTypingUser(data.roomId, data.userId, data.username);
     const onStopTyping = (data: any) =>
       removeTypingUser(data.roomId, data.userId);
-    const onReaction = (data: any) =>
-      updateMessageReactions(data.messageId, data.reactions);
     const onRoomCreated = (room: any) => {
       addRoom(room);
       socket.emit("chat:join", { roomId: room.id });
@@ -89,7 +86,7 @@ const ApexMainApp: React.FC = () => {
     socket.on("chat:message", onMessage);
     socket.on("chat:typing", onTyping);
     socket.on("chat:stop-typing", onStopTyping);
-    socket.on("chat:reaction", onReaction);
+
     socket.on("room:created", onRoomCreated);
     socket.on("user:online", onUserOnline);
     socket.on("user:offline", onUserOffline);
@@ -103,7 +100,7 @@ const ApexMainApp: React.FC = () => {
       socket.off("chat:message", onMessage);
       socket.off("chat:typing", onTyping);
       socket.off("chat:stop-typing", onStopTyping);
-      socket.off("chat:reaction", onReaction);
+
       socket.off("room:created", onRoomCreated);
       socket.off("user:online", onUserOnline);
       socket.off("user:offline", onUserOffline);
@@ -118,7 +115,7 @@ const ApexMainApp: React.FC = () => {
     addTypingUser,
     removeTypingUser,
     setConnected,
-    updateMessageReactions,
+
     addRoom,
     updateUserStatus,
     handleReadReceipt,

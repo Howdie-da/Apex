@@ -14,7 +14,7 @@ import authRoutes from "./routes/auth";
 import roomsRouter from "./routes/rooms";
 import healthRoutes from "./routes/health";
 import keysRouter from "./routes/keys";
-import reactionsRouter from "./routes/reactions";
+
 import usersRouter from "./routes/users";
 
 import type {
@@ -39,7 +39,7 @@ async function main(): Promise<void> {
   app.use("/api/auth", authRoutes);
   app.use("/api/rooms", roomsRouter);
   app.use("/api/keys", keysRouter);
-  app.use("/api/messages", reactionsRouter);
+
   app.use("/api/users", usersRouter);
   app.use("/", healthRoutes);
 

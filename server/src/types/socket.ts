@@ -1,5 +1,5 @@
 import { Socket, Server } from "socket.io";
-import type { Message, User, JwtPayload, Reaction } from "./index";
+import type { Message, User, JwtPayload } from "./index";
 
 export interface ServerToClientEvents {
   "room:created": (room: import("./index").Room) => void;
@@ -13,7 +13,7 @@ export interface ServerToClientEvents {
   "chat:stop-typing": (data: { userId: string; roomId: string }) => void;
   "chat:user-joined": (data: { user: User; roomId: string }) => void;
   "chat:user-left": (data: { user: User; roomId: string }) => void;
-  "chat:reaction": (data: { messageId: string; reactions: Reaction[] }) => void;
+
   "chat:read-receipt": (data: {
     roomId: string;
     readerId: string;
@@ -40,16 +40,7 @@ export interface ClientToServerEvents {
   "chat:typing": (data: { roomId: string }) => void;
   "chat:stop-typing": (data: { roomId: string }) => void;
   "chat:history": (data: { roomId: string; before?: string }) => void;
-  "chat:react": (data: {
-    messageId: string;
-    emoji: string;
-    roomId: string;
-  }) => void;
-  "chat:unreact": (data: {
-    messageId: string;
-    emoji: string;
-    roomId: string;
-  }) => void;
+
 }
 
 export type AuthenticatedSocket = Socket<

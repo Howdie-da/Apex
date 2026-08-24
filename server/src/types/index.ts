@@ -23,11 +23,6 @@ export interface UserRow {
   created_at: Date;
 }
 
-export interface Reaction {
-  emoji: string;
-  count: number;
-  userIds: string[];
-}
 
 export interface Message {
   id: string;
@@ -37,7 +32,7 @@ export interface Message {
   type: "text" | "image" | "system" | "encrypted";
   replyTo: string | null;
   replyToMessage: ReplyPreview | null;
-  reactions: Reaction[];
+
   createdAt: Date;
   isRead?: boolean;
   sender: {
@@ -68,7 +63,7 @@ export interface MessageRow {
   avatar_url: string | null;
   reply_to_content: string | null;
   reply_to_sender_name: string | null;
-  reactions_json: string | null;
+
 }
 
 export interface Room {
@@ -127,16 +122,6 @@ export function toUser(row: UserRow): User {
 }
 
 export function toMessage(row: MessageRow): Message {
-  let reactions: Reaction[] = [];
-
-  if (row.reactions_json) {
-    try {
-      reactions = JSON.parse(row.reactions_json);
-    } catch {
-      reactions = [];
-    }
-  }
-
   return {
     id: row.id,
     senderId: row.sender_id,
@@ -152,7 +137,7 @@ export function toMessage(row: MessageRow): Message {
             senderDisplayName: row.reply_to_sender_name || "User",
           }
         : null,
-    reactions,
+
     createdAt: row.created_at,
     isRead: row.is_read,
     sender: {

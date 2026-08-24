@@ -6,18 +6,7 @@ import type { AuthenticatedSocket, TypedServer } from "../types/socket";
 
 const log = logger.child({ module: "socket:chat" });
 
-const ALLOWED_EMOJIS = new Set([
-  "👍",
-  "❤️",
-  "😂",
-  "😮",
-  "😢",
-  "🔥",
-  "👎",
-  "🎉",
-  "🤔",
-  "💯",
-]);
+
 
 export function chatHandler(
   io: TypedServer,
@@ -139,41 +128,4 @@ export function chatHandler(
     }
   });
 
-  socket.on("chat:react", async ({ messageId, emoji, roomId }) => {
-    try {
-      // Bypasses storing arbitrary strings as emojis to prevent XSS payloads disguised as emojis.
-      if (!ALLOWED_EMOJIS.has(emoji)) {
-        socket.emit("error", { message: "Invalid emoji" });
-        return;
-      }
-
-      await MessageModel.addReaction(messageId, user.userId, emoji);
-      
-      const reactions = await MessageModel.getReactions(messageId);
-      
-      io.to(roomId).emit("chat:reaction", { messageId, reactions });
-
-    } catch (err) {
-      log.error(
-        { err, userId: user.userId, messageId },
-        "Error adding reaction",
-      );
-    }
-  });
-
-  socket.on("chat:unreact", async ({ messageId, emoji, roomId }) => {
-    try {
-      await MessageModel.removeReaction(messageId, user.userId, emoji);
-      
-      const reactions = await MessageModel.getReactions(messageId);
-      
-      io.to(roomId).emit("chat:reaction", { messageId, reactions });
-
-    } catch (err) {
-      log.error(
-        { err, userId: user.userId, messageId },
-        "Error removing reaction",
-      );
-    }
-  });
 }

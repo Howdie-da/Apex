@@ -10,11 +10,6 @@ export interface User {
   createdAt: string;
 }
 
-export interface Reaction {
-  emoji: string;
-  count: number;
-  userIds: string[];
-}
 
 export interface ReplyPreview {
   id: string;
@@ -32,7 +27,7 @@ export interface Message {
   type: "text" | "image" | "system" | "encrypted";
   replyTo: string | null;
   replyToMessage: ReplyPreview | null;
-  reactions: Reaction[];
+
   createdAt: string;
   isRead?: boolean;
   sender: {
