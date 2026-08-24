@@ -455,7 +455,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
       if (!sharedKey) return message;
 
       const plaintext = await decryptMessage(message.content, sharedKey);
-      return { ...message, decrypted: plaintext };
+
+      // Also decrypt the nested reply preview content if present
+      let decryptedReplyToMessage = message.replyToMessage;
+      if (message.replyToMessage?.content) {
+        try {
+          const replyPlaintext = await decryptMessage(message.replyToMessage.content, sharedKey);
+          decryptedReplyToMessage = { ...message.replyToMessage, decrypted: replyPlaintext };
+        } catch {
+          decryptedReplyToMessage = { ...message.replyToMessage, decrypted: "[Encrypted Message]" };
+        }
+      }
+
+      return { ...message, decrypted: plaintext, replyToMessage: decryptedReplyToMessage };
 
     } catch (err) {
       console.warn("[E2EE] Decryption failed for message", message.id, err);

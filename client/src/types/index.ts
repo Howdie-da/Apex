@@ -19,6 +19,7 @@ export interface Reaction {
 export interface ReplyPreview {
   id: string;
   content: string;
+  decrypted?: string;
   senderDisplayName: string;
 }
 

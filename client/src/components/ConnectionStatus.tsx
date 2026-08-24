@@ -4,7 +4,6 @@ import { useChatStore } from "../store/useChatStore";
 export const ConnectionStatus: React.FC = () => {
   const isConnected = useChatStore((state) => state.isConnected);
 
-  // A purely presentational component that subscribes only to the isConnected slice of Zustand to minimize render footprints.
   return (
     <div className="flex items-center gap-2" aria-live="polite">
       {}
