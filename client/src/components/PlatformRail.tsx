@@ -8,6 +8,7 @@ import {
   PanelLeftClose,
 } from "lucide-react";
 import type { CategoryId } from "../types";
+import ApexLogo from "./ApexLogo";
 
 interface PlatformRailProps {
   active: CategoryId;
@@ -58,12 +59,12 @@ export const PlatformRail: React.FC<PlatformRailProps> = ({
       className="flex flex-col items-center w-16 shrink-0 border-r border-border bg-sidebar h-full select-none"
       aria-label="Apex Navigation Rail"
     >
-      {}
+      {/* Brand logo */}
       <div
-        className="w-16 h-16 shrink-0 bg-foreground text-background font-mono font-bold text-xl flex items-center justify-center border-b border-border"
+        className="w-16 h-16 shrink-0 bg-foreground text-background flex items-center justify-center border-b border-border"
         title="Apex Messenger"
       >
-        A
+        <ApexLogo size={24} className="text-background" />
       </div>
       {}
       <div className="flex flex-col items-center gap-2 py-3 flex-1 w-full overflow-y-auto">

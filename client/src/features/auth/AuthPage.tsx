@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { AlertTriangle, User, Lock, KeyRound } from "lucide-react";
+import ApexLogo from "../../components/ApexLogo";
 
 export const AuthPage: React.FC = () => {
   const { login, register, error, clearError } = useAuth();
@@ -71,8 +72,8 @@ export const AuthPage: React.FC = () => {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6 select-none bg-background text-foreground">
       {}
       <div className="mb-6 text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 mb-3 font-mono font-bold text-lg border border-foreground bg-foreground text-background">
-          A
+        <div className="inline-flex items-center justify-center w-12 h-12 mb-3 border border-foreground bg-foreground text-background">
+          <ApexLogo size={24} className="text-background" />
         </div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Apex
