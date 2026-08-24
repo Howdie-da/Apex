@@ -258,7 +258,7 @@ export const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                   )}
                 </div>
                 <p className="font-mono text-[11px] text-muted-foreground truncate">
-                  @{foundUser.username}
+                  {foundUser.username}
                 </p>
               </div>
               <div className="shrink-0 flex items-center justify-center w-6 h-6 border border-border/50 bg-background">

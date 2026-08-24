@@ -62,7 +62,7 @@ const UserInfoModal: React.FC<UserInfoModalProps> = ({
                 {user.displayName}
               </span>
               <span className="font-mono text-xs text-muted-foreground truncate">
-                @{user.username}
+                {user.username}
               </span>
             </div>
           </div>

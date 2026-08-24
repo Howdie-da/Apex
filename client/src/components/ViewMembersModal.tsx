@@ -181,7 +181,7 @@ export const ViewMembersModal: React.FC<ViewMembersModalProps> = ({
                       )}
                     </div>
                     <p className="font-mono text-[11px] text-muted-foreground truncate">
-                      @{user.username}
+                      {user.username}
                     </p>
                   </div>
                 </div>

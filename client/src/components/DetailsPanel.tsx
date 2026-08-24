@@ -33,7 +33,7 @@ export const DetailsPanel: React.FC<DetailsPanelProps> = ({
   const handle = isGroup
     ? `#${room.name}`
     : room.dmUser
-      ? `@${room.dmUser.username}`
+      ? room.dmUser.username
       : "DM";
   const initials = getAvatarInitials(
     room.dmUser ? room.dmUser.displayName : room.name,

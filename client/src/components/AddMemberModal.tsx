@@ -244,7 +244,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({
                       )}
                     </div>
                     <p className="font-mono text-[11px] text-muted-foreground truncate">
-                      @{user.username}
+                      {user.username}
                     </p>
                   </div>
                   <div className="shrink-0 flex items-center justify-center w-6 h-6 border border-border/50 bg-background">

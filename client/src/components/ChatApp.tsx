@@ -139,7 +139,7 @@ export const ChatApp: React.FC = () => {
               onStopTyping={() => emitStopTyping(activeRoom?.id || "")}
               detailsOpen={detailsOpen}
               onToggleDetails={() => setDetailsOpen(!detailsOpen)}
-              onBack={() => setMobileThread(false)}
+              onBack={() => { setMobileThread(false); setActiveRoomId(""); }}
             />
           </div>
         ) : (
@@ -149,6 +149,7 @@ export const ChatApp: React.FC = () => {
               onSelect={setCategory}
               getUnreadCount={getUnreadCount}
               onLogout={logout}
+              onSettingsClick={() => setUserInfoOpen(true)}
             />
             <div className="flex-1 h-full min-w-0">
               <ConversationList
