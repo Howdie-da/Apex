@@ -146,7 +146,6 @@ Apex/
 - **Private keys** never leave the client unencrypted; only a password-wrapped blob is sent to the server.
 - **SQL injection** is impossible — every query uses `pg` parameterised statements (`$1`, `$2`, …).
 - **Rate limiting** is enforced at the API layer (100 req/min global, 5 req/min on auth endpoints).
-- **Emoji reactions** are validated against an allowlist on both the HTTP and WebSocket layers.
 
 ---
 
