@@ -4,6 +4,16 @@
 
 Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, your rules.
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-apex--client--8kib.onrender.com-000000?style=for-the-badge&logo=render&logoColor=46E3B7)](https://apex-client-8kib.onrender.com)
+[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js_20-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
+
+> 🔗 **Live Demo**: [https://apex-client-8kib.onrender.com](https://apex-client-8kib.onrender.com)
+
 ---
 
 ## Table of Contents
@@ -13,8 +23,6 @@ Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, y
 - [Quickstart](#quickstart)
 - [Project Structure](#project-structure)
 - [Security Notes](#security-notes)
-- [Roadmap](#roadmap)
-- [Future Updates](#future-updates)
 - [Author](#author)
 - [License](#license)
 
@@ -28,11 +36,10 @@ Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, y
 | **End-to-End Encryption** | ECDH P-256 key exchange + AES-GCM-256 per-message encryption for all DMs — the server never sees plaintext |
 | **Zero-Knowledge Key Backup** | Encrypted private key backup stored server-side, unlocked only with your login password (PBKDF2 + AES-GCM) |
 | **Groups & DMs** | Create group rooms or direct messages, with live member lists and room management |
-| **Rich Messaging** | Emoji reactions, threaded replies, typing indicators, and cursor-based infinite scroll history |
+| **Rich Messaging** | Threaded replies, typing indicators, and cursor-based infinite scroll history |
 | **Read Receipts** | Per-message read status with real-time delivery to all room members |
 | **Secure Auth** | Dual-token system: short-lived JWTs (15 min) + hashed refresh token rotation (7 days) with rate limiting |
 | **Online Presence** | Live user online/offline status broadcast across all rooms |
-| **Health & Readiness Checks** | `/health` and `/ready` endpoints for load-balancer probes |
 
 ---
 
@@ -64,7 +71,7 @@ Self-hosted. Open-source. Brutalist design aesthetics. Your data, your server, y
 
 1. **Clone the repository**
    ```bash
-   git clone <your-repo-url>
+   git clone https://github.com/Howdie-da/Apex.git
    cd Apex
    ```
 
@@ -140,25 +147,6 @@ Apex/
 - **SQL injection** is impossible — every query uses `pg` parameterised statements (`$1`, `$2`, …).
 - **Rate limiting** is enforced at the API layer (100 req/min global, 5 req/min on auth endpoints).
 - **Emoji reactions** are validated against an allowlist on both the HTTP and WebSocket layers.
-
----
-
-## Roadmap
-
-- [x] **Phase 1** — Core Architecture & Real-Time Sync
-- [x] **Phase 2** — End-to-End Encryption (E2EE) Protocol
-- [x] **Phase 3** — Docker Containerisation & Cloud Deployment
-
----
-
-## Future Updates
-
-- **Media Uploads** — Zero-knowledge file & image sharing via Cloudflare R2 (S3-compatible). Files are encrypted client-side with AES-GCM before upload; the server only stores an opaque blob.
-- **Redis Pub/Sub** — Replace in-process Socket.io event routing with a Redis adapter to allow horizontal scaling across multiple server instances without sticky sessions.
-- **Message Edit & Delete** — Allow senders to retract or edit messages, with real-time propagation to all room members.
-- **Full-Text Message Search** — Leverage PostgreSQL `tsvector` / `to_tsquery` for server-side keyword search across chat history.
-- **Web Push Notifications** — Background push delivery via the Web Push API so users receive alerts even when the tab is closed.
-- **E2EE for Group Chats** — Extend end-to-end encryption beyond DMs. Group chats require a different key distribution model (e.g., sender keys or per-session group keys) which is architecturally non-trivial.
 
 ---
 
